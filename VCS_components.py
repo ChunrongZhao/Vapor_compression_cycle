@@ -1,8 +1,7 @@
-
 """the main components of the vapor compression cycle are
 compressor, evaporator, expansion valve and condenser"""
 
-# Paper-5-VCS_components.py
+# VCS_components.py
 #
 # Created: Oct 2023, C.R. Zhao
 
@@ -132,7 +131,7 @@ class VCS_condenser_Finned_Tube_3Zones:
         T_outlet_design                     = T_sat_liq - self.subcooling_degree
         cp_3                                = CoolProp.PropsSI('C', 'P', P_outlet, 'T', T_outlet_design, self.refrigerant_name)
 
-        """algorithm to get 3-zone info;
+        """algorithm to get 3-zone info;  
         5 thermophysical outputs are: [pressure, temperature, enthalpy, vapor quality, transferred heat]; and
         3 zone lengths are: [L_1, L_2, L_3] """
 
@@ -362,7 +361,7 @@ class VCS_evaporator_Finned_Tube_2Zones:
         T_outlet_design                     = T_sat_vap + self.superheating_degree
         cp_3                                = CoolProp.PropsSI('C', 'P', P_outlet, 'T', T_outlet_design, self.refrigerant_name)
 
-        """algorithm to get 3-zone info;
+        """algorithm to get 3-zone info;  
         5 thermophysical outputs are: [pressure, temperature, enthalpy, vapor quality, transferred heat]; and
         3 zone lengths are: [L_1, L_2, L_3] """
 
