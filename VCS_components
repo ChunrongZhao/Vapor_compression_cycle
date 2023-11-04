@@ -1,0 +1,46 @@
+
+        setup                           = HeatExchanger_TEM()
+
+    # Problem parameters
+    opt_prob                            = Problem('test_problem_' + test_case, setup.obj_func, map_internally=True, n_processors=32)
+
+    # Set variables, constraints & objectives
+    setup.do(opt_prob)
+
+    # Algorithm instance
+    algorithm                            = NSGA2(n_population=100, max_gen=1000, survival=RankAndCrowdingSurvival(filter_infeasible=False), save_name=save_name)
+    # algorithm                           = SHAMODE(n_population=100, max_gen=1000, survival=TwoRankingSurvival(filter_infeasible=False), save_name=save_name)
+    # algorithm                           = CCMO(n_population=100, max_gen=1000, save_name=save_name)
+
+    # Flag for setting random seed for optimisation
+    seed                                = 1
+
+    # Flag for passing initial values of design variables to population
+    x_init                              = True
+
+    # Run optimisation
+    minimise(opt_prob, algorithm, seed=seed, hot_start=False, x_init=x_init, save_history=True)
+
+    MPI.COMM_WORLD.barrier()
+
+    elapsed                             = time.time() - t
+    print('Elapsed time: {0:f} seconds'.format(elapsed))
+
+    sys.exit()
+
+
+# ---------------------------------------------------------------------
+#   Run Main
+# ---------------------------------------------------------------------
+if __name__ == '__main__':
+
+    # Select optimisation problem
+    test_case                           = 'heat_exchanger'
+    # Run optimisation
+    save_name = f"test_problem_{test_case}"
+    main(test_case, save_name=save_name)
+
+    # todo check the following items before run cases:
+    # 1. case number 0-2, 3-6,..
+    # 2. case segments
+    # 3. pack size, i.e, N_parallel = 130
