@@ -156,6 +156,7 @@ class FinInputs_Iter:
         ValidateFields(d, reqFields, optFields)
 
 
+# --------------------------------------------------------------------------
 def WavyLouveredFins(Inputs):
     """
     # Correlations from:
@@ -202,114 +203,115 @@ def WavyLouveredFins(Inputs):
               \ ___ /
     """
 
-    Ntubes_bank = Inputs.Tubes.NTubes_per_bank  #tubes per bank
-    Nbank =       Inputs.Tubes.Nbank            #Number of banks
-    Ltube =       Inputs.Tubes.Ltube            #length of a single tube
-    D =           Inputs.Tubes.OD               #Outer diameter of tube
-    Pl =          Inputs.Tubes.Pl               #Horizontal spacing between banks (center to center)
-    Pt =          Inputs.Tubes.Pt               #Vertical spacing between tubes in a bank (center to center)
+    N_tubes_bank        = Inputs.Tubes.N_Tubes_per_bank         # tubes per bank
+    N_bank              = Inputs.Tubes.N_bank                   # Number of banks
+    L_tube              = Inputs.Tubes.L_tube                   # length of a single tube
+    D                   = Inputs.Tubes.OD                       # Outer diameter of tube
+    Pl                  = Inputs.Tubes.Pl                       # Horizontal spacing between banks (center to center)
+    Pt                  = Inputs.Tubes.Pt                       # Vertical spacing between tubes in a bank (center to center)
 
-    FPI =         Inputs.Fins.FPI
-    pd =          Inputs.Fins.Pd
-    xf =          Inputs.Fins.xf
-    t =           Inputs.Fins.t
-    k_fin =       Inputs.Fins.k_fin
+    FPI                 = Inputs.Fins.FPI
+    pd                  = Inputs.Fins.Pd
+    xf                  = Inputs.Fins.xf
+    t                   = Inputs.Fins.t
+    k_fin               = Inputs.Fins.k_fin
 
-    Vdot_ha =     Inputs.Air.Vdot_ha
-    p =           Inputs.Air.p
+    V_dot_ha            = Inputs.Air.V_dot_ha
+    p                   = Inputs.Air.p
 
-    if hasattr(Inputs,'Tmean'):
-        Temp = Inputs.Air.Tmean
+    if hasattr(Inputs, 'T_mean'):
+        Temp            = Inputs.Air.T_mean
     else:
-        Temp = Inputs.Air.Tdb
+        Temp            = Inputs.Air.T_db
 
-    if hasattr(Inputs,'RHmean'):
-        RHin = Inputs.Air.RHmean
+    if hasattr(Inputs, 'RH_mean'):
+        RH_in           = Inputs.Air.RH_mean
     else:
-        RHin = Inputs.Air.RH
+        RH_in           = Inputs.Air.RH
 
     # Check that cs_cp is defined, if so, set it to the value passed in
-    if (hasattr(Inputs,'cs_cp') and Inputs.cs_cp>0) or (hasattr(Inputs,'WetDry') and Inputs.WetDry=='Wet'):
-        isWet=True
-        cs_cp=Inputs.Air.cs_cp
+    if (hasattr(Inputs, 'cs_cp') and Inputs.cs_cp > 0) or (hasattr(Inputs, 'WetDry') and Inputs.WetDry == 'Wet'):
+        isWet           = True
+        cs_cp           = Inputs.Air.cs_cp
     else:
-        isWet=False
-        cs_cp=1.0
+        isWet           = False
+        cs_cp           = 1.0
 
-    #Film temperature [K]
-    Tfilm = Temp
-    #Fins per meter [1/m]
-    FPM = FPI / 0.0254
-    #Fin pitch (distance between centerlines of fins)
+    # Film temperature [K]
+    T_film              = Temp
+    # Fins per meter [1/m]
+    FPM                 = FPI / 0.0254
+    # Fin pitch (distance between centerlines of fins)
     pf = 1 / FPM
-    #Spacing between fins
-    s = 1 / FPM - t
+    # Spacing between fins
+    s                   = 1 / FPM - t
 
-    #Height of heat exchanger [m]
-    Height = Pt * (Ntubes_bank+1)  #assuming that fin extends 1/2 pt above/below last tube in bundle
-    #A_duct is the face area [m^2] equivalent to the duct cross-section
-    A_duct = Height * Ltube  #neglecting the additional height of the fins above/below the last tubes in the bundle
-    #Number of fins in the tube sheet [-]
-    Nfin = Ltube * FPM
-    #Secant of theta is the area enhancement factor [-]
-    #  It captures the increase in area due to the waviness of the fins
-    sec_theta = sqrt(xf*xf + pd*pd) / xf
+    # Height of heat exchanger [m]
+    Height              = Pt * (N_tubes_bank + 1)       # assuming that fin extends 1/2 pt above/below last tube in bundle
+    # A_duct is the face area [m^2] equivalent to the duct cross-section
+    A_duct              = Height * L_tube               # neglecting the additional height of the fins above/below the last tubes in the bundle
+    # Number of fins in the tube sheet [-]
+    N_fin               = L_tube * FPM
+    # Secant of theta is the area enhancement factor [-]
+    # It captures the increase in area due to the waviness of the fins
+    sec_theta           = sqrt(xf*xf + pd*pd) / xf
     # Duct cross-sectional area that is not fin or tube [m^2]
-    Ac = A_duct - t * Nfin * (Height-D*Ntubes_bank) - Ntubes_bank * D * Ltube
+    Ac                  = A_duct - t * N_fin * (Height - D * N_tubes_bank) - N_tubes_bank * D * L_tube
     # Total outer area of the tubes [m^2]
-    Atube = Ntubes_bank * Nbank * pi * D * Ltube
-    #Wetted Area of a single fin [m^2]
-    A_1fin = 2.0 * (Height * Pl * (Nbank+1) * sec_theta  - Ntubes_bank*Nbank * pi*D*D/4) #assuming that fin extends 1/2 pt in front/after last tube in bundle
+    A_tube              = N_tubes_bank * N_bank * pi * D * L_tube
+    # Wetted Area of a single fin [m^2]
+    A_1fin              = 2.0 * (Height * Pl * (N_bank + 1) * sec_theta - N_tubes_bank * N_bank * pi * D*D / 4)
+                                                        # assuming that fin extends 1/2 pt in front/after last tube in bundle
     # Total wetted area of the fins [m^2]
-    Af = Nfin * A_1fin
-    #Total area including tube and fins [m^2]
-    A = Af + Ntubes_bank * Nbank * pi * D * (Ltube-Nfin*t)
+    Af                  = N_fin * A_1fin
+    # Total area including tube and fins [m^2]
+    A = Af + N_tubes_bank * N_bank * pi * D * (L_tube - N_fin * t)
 
-    #Evaluate the mass flow rate based on inlet conditions
+    # Evaluate the mass flow rate based on inlet conditions
     # To convert a parameter from per kg_{dry air} to per kg_{humid air}, divide by (1+W)
-    W=HAPropsSI('W','T',Inputs.Air.Tdb,'P',p,'R',Inputs.Air.RH)
-    v_da=HAPropsSI('V','T',Inputs.Air.Tdb,'P',p,'W',W)
-    h_da=HAPropsSI('H','T',Inputs.Air.Tdb,'P',p,'W',W) #[J/kg]
-    rho_ha = 1 / v_da*(1+W) #[kg_ha/m^3]
-    rho_da = 1 / v_da #[kg_da/m^3]
-    mdot_ha = Vdot_ha * rho_ha #[kg_ha/s]
-    mdot_da = Vdot_ha * rho_da #[kg_da/s]
+    W                   = HAPropsSI('W', 'T', Inputs.Air.T_db, 'P', p, 'R', Inputs.Air.RH)
+    v_da                = HAPropsSI('V', 'T', Inputs.Air.T_db, 'P', p, 'W', W)
+    h_da                = HAPropsSI('H', 'T', Inputs.Air.T_db, 'P', p, 'W', W)          # [J/kg]
+    rho_ha              = 1 / v_da * (1 + W)                                            # [kg_ha/m^3]
+    rho_da              = 1 / v_da                                                      # [kg_da/m^3]
+    m_dot_ha            = V_dot_ha * rho_ha                                             # [kg_ha/s]
+    m_dot_da            = V_dot_ha * rho_da                                             # [kg_da/s]
 
-    umax = mdot_ha / (rho_ha * Ac) #[m/s]
+    umax                = m_dot_ha / (rho_ha * Ac)                                      # [m/s]
 
-    #Use a forward difference to calculate cp from cp=dh/dT
-    dT=0.0001 #[K]
-    cp_da=(HAPropsSI('H','T',Inputs.Air.Tdb+dT,'P', p, 'W',W)-h_da)/dT #[J/kg_da/K]
-    cp_ha=cp_da/(1+W) #[J/kg_ha/K]
+    # Use a forward difference to calculate cp from cp=dh/dT
+    dT                  = 0.0001                                                        # [K]
+    cp_da               = (HAPropsSI('H', 'T', Inputs.Air.T_db+dT, 'P', p, 'W', W) - h_da) / dT     # [J/kg_da/K]
+    cp_ha               = cp_da / (1 + W)                                               # [J/kg_ha/K]
 
-    #Transport properties of humid air from CoolProp
-    mu_ha=HAPropsSI('M','T',Inputs.Air.Tdb,'P',p,'W',W)
-    k_ha=HAPropsSI('K','T',Inputs.Air.Tdb,'P',p,'W',W)
+    # Transport properties of humid air from CoolProp
+    mu_ha               = HAPropsSI('M', 'T', Inputs.Air.T_db, 'P', p, 'W', W)
+    k_ha                = HAPropsSI('K', 'T', Inputs.Air.T_db, 'P', p, 'W', W)
 
-    #Dimensionless Groups
-    Pr = cp_ha * mu_ha / k_ha
-    Re_D = rho_ha * umax * D / mu_ha
+    # Dimensionless Groups
+    Pr                  = cp_ha * mu_ha / k_ha
+    Re_D                = rho_ha * umax * D / mu_ha
 
-    #Heat transfer
-    j = 16.06 * pow(Re_D,-1.02 * (pf / D) - 0.256) * pow(A / Atube, -0.601) * pow(Nbank,-0.069) * pow(pf / D,0.84) #Colburn j-Factor
-    h_a = j * rho_ha * umax * cp_ha / pow(Pr,2.0/3.0) #air side mean heat transfer coefficient
+    # Heat transfer
+    j   = 16.06 * pow(Re_D, -1.02 * (pf / D) - 0.256) * pow(A / A_tube, -0.601) * pow(N_bank, -0.069) * pow(pf / D, 0.84) # Colburn j-Factor
+    h_a = j * rho_ha * umax * cp_ha / pow(Pr, 2.0/3.0)                                  # air side mean heat transfer coefficient
 
-    #air side pressure drop correlations
-    if (Re_D<1e3):
-        fa_total=0.264*(0.105+0.708*exp(-Re_D/225.0))*pow(Re_D,-0.637)*pow(A/Atube,0.263)*pow(pf/D,-0.317)
+    # air side pressure drop correlations
+    if Re_D < 1e3:
+        fa_total        = 0.264 * (0.105 + 0.708 * exp(-Re_D / 225.0)) * pow(Re_D, -0.637) * pow(A / A_tube, 0.263) * pow(pf / D, -0.317)
     else:
-        fa_total=0.768*(0.0494+0.142*exp(-Re_D/1180.0))*pow(A/Atube,0.0195)*pow(pf/D,-0.121)
+        fa_total        = 0.768 * (0.0494 + 0.142 * exp(-Re_D / 1180.0)) * pow(A / A_tube, 0.0195) * pow(pf / D, -0.121)
 
-    #calcs needed for specific fin types
-    r = D / 2
-    X_D = sqrt(Pl*Pl + Pt*Pt / 4) / 2
-    X_T = Pt / 2
-    rf_r = 1.27 * X_T / r * sqrt(X_D / X_T - 0.3)
-    m = sqrt(2 * h_a * cs_cp / (k_fin * t)) #cs_cp is the correction for heat/mass transfer
+    # calcs needed for specific fin types
+    r                   = D / 2
+    X_D                 = sqrt(Pl*Pl + Pt*Pt / 4) / 2
+    X_T                 = Pt / 2
+    rf_r                = 1.27 * X_T / r * sqrt(X_D / X_T - 0.3)
+    m                   = sqrt(2 * h_a * cs_cp / (k_fin * t))                           # cs_cp is the correction for heat/mass transfer
 
-    #Using the circular fin correlation of Schmidt
-    phi = (rf_r - 1) * (1 + 0.35 * log(rf_r))
-    eta_f = tanh(m * r * phi) / (m * r * phi)
+    # Using the circular fin correlation of Schmidt
+    phi                 = (rf_r - 1) * (1 + 0.35 * log(rf_r))
+    eta_f               = tanh(m * r * phi) / (m * r * phi)
 
     # Fin efficiency based on analysis in
     # "FIN EFFICIENCY CALCULATION IN ENHANCED FIN-AND-TUBE HEAT EXCHANGERS IN DRY CONDITIONS"
@@ -317,38 +319,37 @@ def WavyLouveredFins(Inputs):
     # In the paper, there is no 0.1 in the cosine term, but if the cosine term is used without
     # the correction, the results are garbage for wet analysis
     # Using the offset fins correlation
-    phi = (rf_r - 1) * (1 + (0.3+pow(m*(rf_r*r-r)/2.5,1.5-rf_r/12.0)*(0.26*pow(rf_r,0.3)-0.3)) * log(rf_r))
+    phi                 = (rf_r - 1) * (1 + (0.3 + pow(m * (rf_r * r - r) / 2.5, 1.5 - rf_r / 12.0) * (0.26 * pow(rf_r, 0.3) - 0.3)) * log(rf_r))
 
-    #finned surface efficiency
-    eta_f = tanh(m * r * phi) / (m * r * phi)*cos(0.1 * m * r * phi)
+    # finned surface efficiency
+    eta_f               = tanh(m * r * phi) / (m * r * phi) * cos(0.1 * m * r * phi)
 
-    #overall surface efficiency
-    eta_o = 1 - Af / A * (1 - eta_f)
+    # overall surface efficiency
+    eta_o               = 1 - Af / A * (1 - eta_f)
 
-    G_c=mdot_ha/Ac #air mass flux
-    DeltaP_air=A/Ac/rho_ha*G_c**2/2.0*fa_total #airside pressure drop
+    G_c                 = m_dot_ha / Ac                                                 # air mass flux
+    DeltaP_air          = A / Ac / rho_ha * G_c**2 / 2.0 * fa_total                     # airside pressure drop
 
-    #write necessary values back into the given structure
-    Inputs.A_a=A;
-    Inputs.cp_da=cp_da
-    Inputs.cp_ha=cp_ha
-    if isWet==True:
-        Inputs.eta_a_wet=eta_o
+    # write necessary values back into the given structure
+    Inputs.A_a          = A
+    Inputs.cp_da        = cp_da
+    Inputs.cp_ha        = cp_ha
+
+    if isWet == True:
+        Inputs.eta_a_wet    = eta_o
     else:
-        Inputs.eta_a=eta_o
-    Inputs.h_a=h_a
-    Inputs.mdot_ha=mdot_ha
-    Inputs.mdot_da=mdot_da
-    Inputs.f_a=fa_total
-    Inputs.dP_a=DeltaP_air
-    Inputs.Re=Re_D
+        Inputs.eta_a        = eta_o
+
+    Inputs.h_a              = h_a
+    Inputs.m_dot_ha         = m_dot_ha
+    Inputs.m_dot_da         = m_dot_da
+    Inputs.f_a              = fa_total
+    Inputs.dP_a             = DeltaP_air
+    Inputs.Re               = Re_D
 
 
-    #f_tube = 4 / pi * (0.25 + 0.118 / (St / D - 1) ^ 1.08 * Re_D ^ -0.16) * (St / D - 1)
-    #f_fin = 1.455 * Re_D ^ -0.656 * (St / Sl) ^ -0.347 * (s / D) ^ -0.134 * (St / D) ^ 1.23
-    #f_total = f_fin * (Af / A) + f_tube * (1 - Af / A) * (1 - t / pf)
 
-
+# --------------------------------------------------------------------------
 def HerringboneFins(Inputs):
     # Source:
     # Empirical correlations for heat transfer and flow friction characteristics of herringbone wavy fin-and-tube heat exchangers
@@ -756,6 +757,8 @@ def HerringboneFins_Dimensions_Iter(Height, L_tube, P_L, secTheta, t_fin, N_fin,
 
     return L_COND, H_COND, W_COND, m_COND, V_COND
 
+
+# --------------------------------------------------------------------------
 def PlainFins(Inputs):
     #Source:
     #Heat transfer and friction characteristics of plain fin-and-tube heat exchangers, part II: Correlation
