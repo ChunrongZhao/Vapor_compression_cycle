@@ -228,6 +228,137 @@ def LockhartMartinelli(AS, G, D, x, T_bubble, T_dew, C=None, satTransport=None):
     return dp_dz, alpha
 
 
+def PHE_1phase_hdP(Inputs, JustGeo=False):
+    """
+    Based on the single-phase pressure drop and heat transfer correlations
+    in VDI Heat Atlas Chapter N6: Pressure Drop and Heat Transfer in Plate Heat
+    Exchangers by Holger Martin DOI: 10.1007/978-3-540-77877-6_66 Springer Verlag
+    Outputs: for JustGeo=True >> Ap, Vchannel, Aflow, Dh, PHI
+             for JustGeo=False >> Dh, h, Ap, DELTAP, Re_g, w_g, k_g, cp_g, Vchannel, Aflow
+    ::
+        =============================
+        ||   __               __    ||
+        ||  /  \             /  \   ||
+        || |    |           |    |  ||  ===
+        ||  \__/             \__/   ||   |
+        ||                          ||   |
+        ||             | <-  B   -> ||   |
+        ||                          ||   |
+        ||                          ||   |
+        ||                          ||
+        ||                          ||
+        ||             |\           ||
+        ||             | \          ||   Lp
+        ||             |  \         ||
+        ||             |   \        ||
+        ||             |phi \       ||
+        ||             |     \      ||   |
+        ||                          ||   |
+        ||   __               __    ||   |
+        ||  /  \             /  \   ||   |
+        || |    |           |    |  ||  ===
+        ||  \__/             \__/   ||
+        ||                          ||
+        =============================
+         | -----      Bp  --------- |
+
+         phi is the inclination angle
+    """
+
+    # Plate parameters
+    PlateAmplitude                          = Inputs['PlateAmplitude']  # mean flow channel gap, m
+    PlateWavelength                         = Inputs['PlateWavelength'] # corrugation pitch, m
+    InclinationAngle                        = Inputs['InclinationAngle']
+    Bp                                      = Inputs['Bp']
+    Lp                                      = Inputs['Lp']
+    if JustGeo == False:
+        AS                                  = Inputs['AS']
+        T                                   = Inputs['T']
+        p                                   = Inputs['p']
+        m_dot_gap                           = Inputs['m_dot_gap']                   # mass flow rate per channel
+
+    X                                       = 2 * pi * PlateAmplitude / PlateWavelength
+    PHI                                     = 1 / 6 * (1 + sqrt(1 + X**2) + 4 * sqrt(1 + X**2 / 2))
+
+    # The plane surface between the ports
+    A0                                      = Bp * Lp
+
+    # The plane surface of one plate
+    Ap                                      = PHI * A0
+
+    # The volume of one channel
+    Vchannel                                = Bp * Lp * 2 * PlateAmplitude
+
+    # Hydraulic diameter
+    dh                                      = 4 * PlateAmplitude / PHI
+
+    if JustGeo == True:
+        return {'Ap': Ap, 'Vchannel': Vchannel, 'Aflow': 2 * PlateAmplitude * Bp, 'Dh': dh, 'PHI': PHI}
+    else:
+        # Also calculate the thermodynamics and pressure drop
+        # Single phase Fluid properties
+        AS.update(CP.PT_INPUTS, p, T)
+        rho_g                               = AS.rhomass()                          # [kg/m^3]
+        eta_g                               = AS.viscosity()                        # Viscosity[Pa-s]
+        cp_g                                = AS.cpmass()                           # [J/kg-K]
+        k_g                                 = AS.conductivity()                     # Thermal conductivity[W/m/K]
+
+        Pr_g                                = cp_g * eta_g / k_g
+
+        eta_g_w                             = eta_g                                 # TODO: allow for temperature dependence?
+        w_g                                 = m_dot_gap / rho_g /(2 * PlateAmplitude * Bp)
+        Re_g                                = rho_g*w_g*dh/eta_g
+
+        # Calculate the friction factor zeta
+        phi                                 = InclinationAngle
+
+        if Re_g < 2000:
+            zeta0                           = 64 / Re_g
+            zeta1_0                         = 597 / Re_g + 3.85
+        else:
+            zeta0                           = (1.8 * log(Re_g) - 1.5)**(-2)
+            zeta1_0                         = 39 / Re_g**0.289
+
+        a                                   = 3.8
+        b                                   = 0.18
+        c                                   = 0.36
+
+        zeta1                               = a * zeta1_0
+        # RHS from Equation 18
+        RHS                                 = cos(phi) / sqrt(b * tan(phi) + c * sin(phi) + zeta0 / cos(phi)) + (1 - cos(phi)) / sqrt(zeta1)
+        zeta                                = 1 / RHS**2
+        # Hagen number
+        Hg                                  = zeta * Re_g**2 / 2
+
+        # Constants for Nu correlation
+        c_q                                 = 0.122
+        q                                   = 0.374                                 # q=0.39
+        # Nusselt number [-]
+        Nu                                  = c_q * Pr_g**(1/3) * (eta_g / eta_g_w)**(1/6) * (2 * Hg * sin(2 * phi))**(q)
+
+        # Heat transfer coefficient [W/m^2-K]
+        h                                   = Nu * k_g / dh
+
+        # Pressure drop
+        DELTAP                              = Hg * eta_g**2 * Lp / (rho_g * dh**3)
+
+        # There are quite a lot of things that might be useful to have access to
+        # in outer functions, so pack up parameters into a dictionary
+        Outputs = {
+             'Dh':                          dh,                         # Hydraulic diameter [m]
+             'h':                           h,                          # Heat transfer coefficient [W/m^2-K]
+             'Ap':                          Ap,                         # Area of one plate [m^2]
+             'DELTAP':                      DELTAP,                     # Pressure drop [Pa]
+             'Re':                          Re_g,                       # Reynold number
+             'U':                           w_g,                        # Velocity of fluid in channel [m/s]
+             'k':                           k_g,                        # Thermal conductivity of fluid [W/m-K]
+             'cp':                          cp_g,                       # Specific heat of fluid [J/kg-K]
+             'Vchannel':                    Vchannel,                   # Volume of one channel [m^3]
+             'Aflow':                       2 * PlateAmplitude * Bp     # Area of flow [m^2]
+        }
+        return Outputs
+
+
 # ------------------------------------------------------------------
 if __name__ == '__main__':
     # test simps

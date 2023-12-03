@@ -348,7 +348,6 @@ def WavyLouveredFins(Inputs):
     Inputs.Re               = Re_D
 
 
-
 # --------------------------------------------------------------------------
 def HerringboneFins(Inputs):
     # Source:
