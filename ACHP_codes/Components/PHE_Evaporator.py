@@ -82,18 +82,18 @@ class PHEHXClass():
             ('Outlet hot stream temp',              'K',        self.T_out_h),
             ('Inlet cold stream temp',              'K',        self.T_in_c),
             ('Outlet cold stream temp',             'K',        self.T_out_c),
-            ('Charge Total',                        'kg',       self.Charge_h),
-            ('Charge Supercritical',                'kg',       self.Charge_supercritical_h),
-            ('Charge Supercrit_liq',                'kg',       self.Charge_supercrit_liq_h),
-            ('Charge Superheat',                    'kg',       self.Charge_superheated_h),
-            ('Charge Two-Phase',                    'kg',       self.Charge_2phase_h),
-            ('Charge Subcool',                      'kg',       self.Charge_subcooled_h),
-            ('Charge Total',                        'kg',       self.Charge_c),
-            ('Charge Supercritical',                'kg',       self.Charge_supercritical_c),
-            ('Charge Supercrit_liq',                'kg',       self.Charge_supercrit_liq_c),
-            ('Charge Superheat',                    'kg',       self.Charge_superheated_c),
-            ('Charge Two-Phase',                    'kg',       self.Charge_2phase_c),
-            ('Charge Subcool',                      'kg',       self.Charge_subcooled_c),
+            ('Charge Total Hot',                    'kg',       self.Charge_h),
+            ('Charge Supercritical Hot',            'kg',       self.Charge_supercritical_h),
+            ('Charge Supercrit_liq Hot',            'kg',       self.Charge_supercrit_liq_h),
+            ('Charge Superheat Hot',                'kg',       self.Charge_superheated_h),
+            ('Charge Two-Phase Hot',                'kg',       self.Charge_2phase_h),
+            ('Charge Subcool Hot',                  'kg',       self.Charge_subcooled_h),
+            ('Charge Total Cold',                   'kg',       self.Charge_c),
+            ('Charge Supercritical Cold',           'kg',       self.Charge_supercritical_c),
+            ('Charge Supercrit_liq Cold',           'kg',       self.Charge_supercrit_liq_c),
+            ('Charge Superheat Cold',               'kg',       self.Charge_superheated_c),
+            ('Charge Two-Phase Cold',               'kg',       self.Charge_2phase_c),
+            ('Charge Subcool Cold',                 'kg',       self.Charge_subcooled_c),
             ('Hot HTC Supercritical',               'W/m^2-K',  self.h_supercritical_h),
             ('Hot HTC Supercrit_liq',               'W/m^2-K',  self.h_supercrit_liq_h),
             ('Hot HTC Superheat',                   'W/m^2-K',  self.h_superheated_h),
@@ -538,6 +538,7 @@ class PHEHXClass():
         """
         return ((1 - exp(-Ntu * (1 - Cr))) / (1 - Cr * exp(-Ntu * (1 - Cr))))
 
+    # -------------------------------------------------------
     def _OnePhaseH_OnePhaseC_Qimposed(self, Inputs):
         """
         Single phase on both sides (hot and cold)
@@ -611,6 +612,7 @@ class PHEHXClass():
         o                       = Inputs
         o.update(**Outputs)
         return o
+    # -------------------------------------------------------
 
     # -------------------------------------------------------
     def _OnePhaseH_TwoPhaseC_Qimposed(self, Inputs):
@@ -1266,18 +1268,24 @@ class PHEHXClass():
                         print('w[2-1]: ', Outputs['w'])
                     wList.append(Outputs['w'])
                     cellList.append(Outputs)
+                # ---------------------------------------------------------------------------
                 elif Phase_c == 'TwoPhase' and Phase_h in ['Subcooled', 'Superheated']:
                     # Cold stream is evaporating, and hot stream is single-phase (SH or SC)
                     # Must be two-phase so quality is defined
                     x_in_c              = max((h_in_c - self.h_sat_L_c) / (self.h_sat_V_c - self.h_sat_L_c), 0)
                     x_out_c             = min((h_out_c - self.h_sat_L_c) / (self.h_sat_V_c - self.h_sat_L_c), 1)
 
+                    if abs(T_in_h - T_out_h) < 1.e-3:
+                        cp_h            = CoolProp.CoolProp.PropsSI('C', 'P', self.p_in_h, 'T', T_in_h, self.Ref_h)
+                    else:
+                        cp_h            = (h_in_h - h_out_h) / (T_in_h - T_out_h)
+
                     Inputs = {
                         'Q':                            Qbound,
                         'x_in_c':                       x_in_c,
                         'x_out_c':                      x_out_c,
                         'T_sat_c':                      self.T_sat_c,
-                        'cp_h':                         (h_in_h - h_out_h) / (T_in_h - T_out_h),
+                        'cp_h':                         cp_h,
                         # 'cp_c':(hin_c-hout_c)/(Tin_c-Tout_c), #redefined below
                         'T_mean_h':                     (T_in_h + T_out_h) / 2,
                         'T_in_h':                       T_in_h,
@@ -1297,6 +1305,7 @@ class PHEHXClass():
                         print('w[3-2]: ', Outputs['w'])
                     wList.append(Outputs['w'])
                     cellList.append(Outputs)
+                # ---------------------------------------------------------------------------
                 elif Phase_c == 'TwoPhase' and Phase_h in ['Supercritical', 'Supercrit_liq']:
                     # Cold stream is evaporating, and hot stream is transcritical-phase (Supercrit or Suoercrit_liq)
                     # Must be two-phase so quality is defined
@@ -1361,7 +1370,6 @@ class PHEHXClass():
         self.PostProcess(self.cellList)
 
 
-
 # ------------------------------------------
 def WyattPHEHX():
     # Abstract State
@@ -1414,7 +1422,7 @@ def WyattPHEHX():
 
 def SWEPVariedmdot():
     # Abstract State
-    Ref_c                               = 'R290'
+    Ref_c                               = 'R134a'
     Backend_c                           = 'HEOS'
     AS_c                                = CP.AbstractState(Backend_c, Ref_c)
     Ref_h                               = 'Water'
@@ -1425,11 +1433,13 @@ def SWEPVariedmdot():
     for m_dot_h in [0.4176, 0.5013, 0.6267, 0.8357, 1.254, 2.508]:
         params = {
             'AS_c':                     AS_c,
+            'Ref_c':                    Ref_c,
             'm_dot_c':                  0.03312,
             'p_in_c':                   PropsSI('P', 'T', T_in, 'Q', 1.0, Ref_c),
             'h_in_c':                   PropsSI('H', 'T', T_in, 'Q', 0.15, Ref_c),          # [J/kg-K]
 
             'AS_h':                     AS_h,
+            'Ref_h':                    Ref_h,
             'm_dot_h':                  m_dot_h,
             'p_in_h':                   200000,
             'h_in_h':                   PropsSI('H', 'T', 15 + 273.15, 'P', 200000, Ref_h), # [J/kg-K]
@@ -1478,14 +1488,16 @@ def SamplePHEHX():
     for m_dot_h in [0.4176, 0.5013, 0.6267, 0.8357, 1.254, 2.508]:
         params = {
             'AS_c':                             AS_c,
+            'Ref_c':                            Ref_c,
             'm_dot_c':                          0.03312,
             'p_in_c':                           PropsSI('P', 'T', T_in, 'Q', 1.0, Ref_c),
             'h_in_c':                           PropsSI('H', 'T', T_in, 'Q', 0.15, Ref_c),          # [J/kg-K]
 
             'AS_h':                             AS_h,
+            'Ref_h':                            Ref_h,
             'm_dot_h':                          m_dot_h,
             'p_in_h':                           200000,
-            'h_in_h':                           PropsSI('H', 'T', 15+273.15, 'P', 200000, Ref_h),   # [J/kg-K]
+            'h_in_h':                           PropsSI('H', 'T', 15.+273.15, 'P', 200000, Ref_h),   # [J/kg-K]
 
             # Geometric parameters
             'HXType':                           'Plate-HX',                                         # choose the type of IHX
@@ -1518,8 +1530,8 @@ def SamplePHEHX():
     print(TT)
     print(QQ)
     print(Q1)
-#    pylab.plot(TT,QQ)
-#    pylab.show()
+    pylab.plot(TT,QQ)
+    pylab.show()
 
 
 # newly added at 28/11/2023
@@ -1535,14 +1547,17 @@ def WyattPHEHX_test():
     T_dew                               = PropsSI('T', 'P', 294.e3, 'Q', 1.0, Ref_c)
     params = {
         'AS_c':                         AS_c,
+        'Ref_c':                        Ref_c,
         'm_dot_c':                      0.073,
         'p_in_c':                       294.e3,
         'h_in_c':                       PropsSI('H', 'T', T_dew, 'Q', 0.0, Ref_c),          # [J/kg-K]
         'x_in_c':                       0.0,
 
         'AS_h':                         AS_h,
+        'Ref_h':                        Ref_h,
         'm_dot_h':                      10.,
-        'p_in_h':                       PropsSI('P', 'T', 30.+273.15, 'Q', 0., Ref_h),
+        # 'p_in_h':                       PropsSI('P', 'T', 30.+273.15, 'Q', 0., Ref_h),
+        'p_in_h':                       101325,
         'h_in_h':                       PropsSI('H', 'T', 30.+273.15, 'Q', 0., Ref_h),     # [J/kg-K]
 
         # Geometric parameters
@@ -1567,10 +1582,12 @@ def WyattPHEHX_test():
     }
     PHE                                 = PHEHXClass(**params)
     PHE.Calculate()
+    for i in range(len(PHE.OutputList())):
+        print(PHE.OutputList()[i], end='\n')
 
 
-if __name__=='__main__':
+# ---------------------------------------------------------------
+if __name__ == '__main__':
     # SamplePHEHX()
     WyattPHEHX_test()
-
     # SWEPVariedmdot()
