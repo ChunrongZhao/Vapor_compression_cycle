@@ -51,7 +51,7 @@ class FinInputs:
             ('FanPower',    float,  0,          4000),
             ('p',           float,  10,         10000000),
             ('V_dot_ha',    float,  0.001,      10)]
-        optFields       = ['RH_mean', 'T_mean']
+        optFields       = ['RH_mean', 'T_mean', 'cs_cp']
         d               = dict(self.Air.__dict__)   # The current values
         ValidateFields(d, reqFields, optFields)
 

@@ -223,7 +223,7 @@ def DryWetSegment(DWS):
             # Loop to get the correct c_s
             # Start with the inlet temp as the outlet temp
             x1                  = T_in_r + 1                            # Lowest possible outlet temperature
-            x_2                 = T_in_a - 1                            # Highest possible outlet temperature
+            x2                  = T_in_a - 1                            # Highest possible outlet temperature
             eps                 = 1e-8
             iter = 1
             change = 999

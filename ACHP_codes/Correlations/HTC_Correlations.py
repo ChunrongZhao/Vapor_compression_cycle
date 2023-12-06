@@ -291,105 +291,108 @@ def ShahCondensation_Average(x_min, x_max, AS, G, D, p, T_sat_L, T_sat_V):
 
 
 # supercritical
-def Petterson_supercritical_average(Tout,Tin,T_w,AS,G,OD,ID,D_l,mdot,p,q_flux_w):
-    '''
+def Petterson_supercritical_average(Tout, Tin, T_w, AS, G, OD, ID, D_l, mdot, p, q_flux_w):
+    """
     Petterson et al. (2000), Heat transfer and pressure drop for flow supercritical and subcritical CO2 in microchannel tubes
     All details for this correlation are available in Ding Li Thesis (Appendix B):
     "INVESTIGATION OF AN EJECTOR-EXPANSION DEVICE IN A TRANSCRITICAL CARBON DIOXIDE CYCLE FOR MILITARY ECU APPLICATIONS"
-    '''
+    """
 
-    def SuperCriticalCondensation_h(T,T_w,AS,G,OD,ID,D_l,mdot,p,q_flux_w):
-        '''return h value'''
-        return Petterson_supercritical(T,T_w,AS,G,OD,ID,D_l,mdot,p,q_flux_w)[0]
-    def SuperCriticalCondensation_f(T,T_w,AS,G,OD,ID,D_l,mdot,p,q_flux_w):
-        '''return f value'''
-        return Petterson_supercritical(T,T_w,AS,G,OD,ID,D_l,mdot,p,q_flux_w)[1]
-    def SuperCriticalCondensation_cp(T,T_w,AS,G,OD,ID,D_l,mdot,p,q_flux_w):
-        '''return cp value'''
-        return Petterson_supercritical(T,T_w,AS,G,OD,ID,D_l,mdot,p,q_flux_w)[2]
-    def SuperCriticalCondensation_rho(T,T_w,AS,G,OD,ID,D_l,mdot,p,q_flux_w):
-        '''return rho value'''
-        return Petterson_supercritical(T,T_w,AS,G,OD,ID,D_l,mdot,p,q_flux_w)[3]
+    def SuperCriticalCondensation_h(T,   T_w, AS, G, OD, ID, D_l, mdot, p, q_flux_w):
+        """return h value"""
+        return Petterson_supercritical(T, T_w, AS, G, OD, ID, D_l, mdot, p, q_flux_w)[0]
 
-    if not Tout==Tin:
-        #A proper range is given
-        h = quad(SuperCriticalCondensation_h,Tin,Tout,args=(T_w,AS,G,OD,ID,D_l,mdot,p,q_flux_w))[0]/(Tout-Tin)
-        f = quad(SuperCriticalCondensation_f,Tin,Tout,args=(T_w,AS,G,OD,ID,D_l,mdot,p,q_flux_w))[0]/(Tout-Tin)
-        cp = quad(SuperCriticalCondensation_cp,Tin,Tout,args=(T_w,AS,G,OD,ID,D_l,mdot,p,q_flux_w))[0]/(Tout-Tin)
-        rho = quad(SuperCriticalCondensation_rho,Tin,Tout,args=(T_w,AS,G,OD,ID,D_l,mdot,p,q_flux_w))[0]/(Tout-Tin)
-        return (h,f,cp,rho)
+    def SuperCriticalCondensation_f(T,   T_w, AS, G, OD, ID, D_l, mdot, p, q_flux_w):
+        """return f value"""
+        return Petterson_supercritical(T, T_w, AS, G, OD, ID, D_l, mdot, p, q_flux_w)[1]
+
+    def SuperCriticalCondensation_cp(T,  T_w, AS, G, OD, ID, D_l, mdot, p, q_flux_w):
+        """return cp value"""
+        return Petterson_supercritical(T, T_w, AS, G, OD, ID, D_l, mdot, p, q_flux_w)[2]
+
+    def SuperCriticalCondensation_rho(T, T_w, AS, G, OD, ID, D_l, mdot, p, q_flux_w):
+        """return rho value"""
+        return Petterson_supercritical(T, T_w, AS, G, OD, ID, D_l, mdot, p, q_flux_w)[3]
+
+    if not Tout == Tin:
+        # A proper range is given
+        h   = quad(SuperCriticalCondensation_h,   Tin, Tout, args=(T_w, AS, G, OD, ID, D_l, mdot, p, q_flux_w))[0]/(Tout-Tin)
+        f   = quad(SuperCriticalCondensation_f,   Tin, Tout, args=(T_w, AS, G, OD, ID, D_l, mdot, p, q_flux_w))[0]/(Tout-Tin)
+        cp  = quad(SuperCriticalCondensation_cp,  Tin, Tout, args=(T_w, AS, G, OD, ID, D_l, mdot, p, q_flux_w))[0]/(Tout-Tin)
+        rho = quad(SuperCriticalCondensation_rho, Tin, Tout, args=(T_w, AS, G, OD, ID, D_l, mdot, p, q_flux_w))[0]/(Tout-Tin)
+        return (h, f, cp, rho)
     else:
-        #A single value is given
-        return Petterson_supercritical(Tout,T_w,AS,G,OD,ID,D_l,mdot,p,q_flux_w)
+        # A single value is given
+        return Petterson_supercritical(Tout, T_w, AS, G, OD, ID, D_l, mdot, p, q_flux_w)
 
 
-def Petterson_supercritical(T,T_w,AS,G,OD,ID,D_l,mdot,p,q_flux_w):
-    AS.update(CP.PT_INPUTS,p,T_w)
-    h_w = AS.hmass() #[J/kg]
-    mu_w = AS.viscosity() #[Pa-s OR kg/m-s]
-    cp_w = AS.cpmass() #[J/kg-K]
-    k_w = AS.conductivity() #[W/m-K]
-    rho_w = AS.rhomass() #[kg/m^3]
-    Pr_w = cp_w * mu_w / k_w #[-]
+def Petterson_supercritical(T, T_w, AS, G, OD, ID, D_l, mdot, p, q_flux_w):
+    AS.update(CP.PT_INPUTS, p, T_w)
+    h_w                             = AS.hmass()                    # [J/kg]
+    mu_w                            = AS.viscosity()                # [Pa-s OR kg/m-s]
+    cp_w                            = AS.cpmass()                   # [J/kg-K]
+    k_w                             = AS.conductivity()             # [W/m-K]
+    rho_w                           = AS.rhomass()                  # [kg/m^3]
+    Pr_w                            = cp_w * mu_w / k_w             # [-]
 
-    AS.update(CP.PT_INPUTS,p,T)
-    h = AS.hmass() #[J/kg]
-    mu = AS.viscosity() #[Pa-s OR kg/m-s]
-    cp = AS.cpmass() #[J/kg-K]
-    k = AS.conductivity() #[W/m-K]
-    rho = AS.rhomass() #[kg/m^3]
-    Pr = cp * mu / k #[-]
+    AS.update(CP.PT_INPUTS, p, T)
+    h                               = AS.hmass()                    # [J/kg]
+    mu                              = AS.viscosity()                # [Pa-s OR kg/m-s]
+    cp                              = AS.cpmass()                   # [J/kg-K]
+    k                               = AS.conductivity()             # [W/m-K]
+    rho                             = AS.rhomass()                  # [kg/m^3]
+    Pr                              = cp * mu / k                   # [-]
 
-    if mdot == 0: #For the case of Michro-channel
-        Dh = OD
-        Re=G*Dh/mu
-        Re_w=G*Dh/mu_w
-    else: #for the case of fin-and-tube
-        Dh = OD - ID
-        Area=pi*(OD**2-ID**2)/4.0
-        u=mdot/(Area*rho)
-        Re=rho*u*Dh/mu
-        Re_w=Re#rho_w*u*Dh/mu_w
+    if mdot == 0:                                                   # For the case of Micro-channel
+        Dh                          = OD
+        Re                          = G * Dh / mu
+        Re_w                        = G * Dh / mu_w
+    else:                                                           # for the case of fin-and-tube
+        Dh                          = OD - ID
+        Area                        = pi * (OD**2 - ID**2) / 4.0
+        u                           = mdot / (Area * rho)
+        Re                          = rho * u * Dh / mu
+        Re_w                        = Re                            # rho_w*u*Dh/mu_w
 
     if G > 350:
-        e_D = 0 #smooth pipe
-        f = (-1.8*log10(6.9/Re + (1/3.7*e_D)**1.11))**(-2)/4
-        Nu_m = (f/8)*(Re-1000)*Pr/(1+12.7*sqrt(f/8)*(Pr**(2/3)-1)) *(1+(D_l)**(2/3))
-        Nu = Nu_m * (Pr/Pr_w)**0.11
+        e_D                         = 0                             # smooth pipe
+        f                           = (-1.8 * log10(6.9 / Re + (1 / 3.7 * e_D)**1.11))**(-2) / 4
+        Nu_m                        = (f/8) * (Re-1000) * Pr / (1 + 12.7 * sqrt(f/8) * (Pr**(2/3) - 1)) * (1 + D_l**(2/3))
+        Nu                          = Nu_m * (Pr/Pr_w)**0.11
 
-    else: # G<350
+    else:                                                           # G < 350
 
-        M = 0.001 #[kg/J]
-        K = 0.00041 #[kg/J]
+        M                           = 0.001                         # [kg/J]
+        K                           = 0.00041                       # [kg/J]
 
-        cp_avg = (h-h_w)/(T-T_w)
+        cp_avg                      = (h - h_w) / (T - T_w)
 
-        if cp_avg/cp_w <= 1:
-            n = 0.66 - K*(q_flux_w/G)
-        else: #cp_avg/cp_w <1
-            n = 0.9 - K*(q_flux_w/G)
+        if cp_avg / cp_w <= 1:
+            n                       = 0.66 - K * (q_flux_w / G)
+        else:                                                       # cp_avg/cp_w <1
+            n                       = 0.9 - K * (q_flux_w / G)
 
-        f0 = (0.79*log(Re)-1.64)**(-2)
+        f0                          = (0.79 * log(Re) - 1.64)**(-2)
 
-        g =9.81
-        #coefficient of thermal expansion
-        beta = AS.isobaric_expansion_coefficient() #[1/K]
-        #Grashoff number
-        Gr = g*beta*(T_w-T)*Dh**3/(mu/rho)**2
-        if Gr/Re**2 < 5e-4:
-            f = f0 * (mu_w/mu)**0.22
-        elif  Gr/Re**2 >= 5e-4 and G/Re**2 < 0.3:
-            f = 2.15 * f0 * (mu_w/mu)**0.22 * (Gr/Re)**0.1
-        else: #use f0 for friction factor
-            f = f0
+        g                           = 9.81
+        # coefficient of thermal expansion
+        beta                        = AS.isobaric_expansion_coefficient()   # [1/K]
+        # Grashoff number
+        Gr                          = g * beta * (T_w - T) * Dh**3 / (mu/rho)**2
+        if Gr / Re**2 < 5e-4:
+            f                       = f0 * (mu_w/mu)**0.22
+        elif Gr/Re**2 >= 5e-4 and G/Re**2 < 0.3:
+            f                       = 2.15 * f0 * (mu_w/mu)**0.22 * (Gr/Re)**0.1
+        else:                                                       # use f0 for friction factor
+            f                       = f0
 
-        Nu_w_ppk = (f0/8)*Re_w*Pr_w/(1.07+12.7*sqrt(f/8)*(Pr_w**(2/3)-1))
+        Nu_w_ppk                    = (f0/8) * Re_w * Pr_w / (1.07 + 12.7 * sqrt(f/8) * (Pr_w**(2/3) - 1))
 
-        Nu = Nu_w_ppk * (1-M*q_flux_w/G) * (cp_avg/cp_w)**n
+        Nu                          = Nu_w_ppk * (1 - M * q_flux_w / G) * (cp_avg / cp_w)**n
 
-    h = k*Nu/Dh #[W/m^2-K]
+    h                               = k * Nu / Dh                   # [W/m^2-K]
 
-    return (h,f,cp,rho)
+    return (h, f, cp, rho)
 
 
 # single phase flow
@@ -1029,6 +1032,133 @@ def KandlikarPHE(AS, x_mean, G, D, q, T_bubble, T_dew):
     # alpha_r=(2.312*Co**(-0.3)*E_CB+667.3*Bo**(2.8)*F_fl*E_NB)*(1-xmean)**(0.003)*alpha_L
     alpha_r     = 1.055 * (1.056 * Co**(-0.4) + 1.02 * Bo**0.9) * x_mean**(-0.12) * alpha_L**0.98
     return alpha_r
+
+
+# natural convection for the receiver
+def NaturalConv_HTC(AS, HTCat, T_wall, T_inf, P_film, L,D_pipe=None, PlateNum=None):
+
+    """
+    Nusselt number for different heat transfer categories;
+    find heat transfer coefficient based on Nusselt number;
+    characteristic length, A/P;
+    Based on: Incropera et al. "Fundamentals of Heat and Mass Transfer"
+
+    Return heat transfer rate by natural convection
+
+    Parameters
+    ----------
+    AS :            AbstractState with the refrigerant name and backend
+    HTCat :         'horizontal_pipe' or 'vertical_pipe' or 'vertical_plate' or 'horizontal_plate'
+    T_wall [K]:     surface temperature
+    P_film [Pa]:    pressure at the film
+    Tinf [K]:       surrounding temperature
+    L [m]:          characteristic length
+    D_pipe [m]:     pipe diameter
+    PlateNum :      'upper_surface' or 'lower_surface'
+    ----------
+    Return
+    h [W/m^2 K]:    Heat transfer coefficient
+    """
+    # Gravity acceleration
+    g                       = 9.81                      # [m/s^2]
+
+    # Film temperature, used to calculate thermal properties
+    T_film                  = (T_wall + T_inf) / 2      # [K]
+
+    # thermal expansion coefficient, assumed ideal gas
+    beta                    = 1 / T_film                # [1/K]
+
+    # Transport properties calculation film
+    AS.update(CP.PT_INPUTS, P_film, T_film)   # use the film temperature to find the outer convective coefficient
+
+    rho_film                = AS.rhomass()              # [kg/m3]
+    k_film                  = AS.conductivity()         # [W/m-K]
+    mu_film                 = AS.viscosity()            # [Pa-s OR kg/m-s]
+    nu_film                 = mu_film/rho_film          # [m^2/s]
+    cp_film                 = AS.cpmass()               # [J/kg/K]
+    Pr_film                 = cp_film*mu_film/k_film    # [-]
+
+    if T_wall < T_inf:
+        # Grashof number, beta-thermal expansion coefficient
+        Gr = g * beta * (T_inf - T_wall) * L**3 / nu_film**2    # [-]
+    else:
+        # Grashof number, beta-thermal expansion coefficient
+        Gr = g * beta * (T_wall - T_inf) * L**3 / nu_film**2    # [-]
+
+    # Rayleigh number
+    RaL                     = Gr * Pr_film              # [-]
+
+    if HTCat == 'horizontal_pipe':
+        RaD                 = RaL * D_pipe**3 / L**3    # [-]
+
+    if RaL < 1e-3:
+        Nu                  = 0.0                       # [-]
+    else:
+        if HTCat == 'vertical_plate':
+            if RaL > 1e9:
+                Nu = (0.825 + 0.387 * RaL**(1/6) / (1 + (0.492/Pr_film)**(9/16))**(8/27))**2    # [-]
+            else:
+                Nu = 0.68 + 0.670 * RaL**(1/4) / (1 + (0.492/Pr_film)**(9/16))**(4/9)           # [-]
+
+        elif HTCat == 'horizontal_plate':
+            if PlateNum == 'upper_surface':
+                if T_wall > T_inf:          # hot plate
+                    if RaL >= 1e4 and RaL <= 1e7:
+                        Nu = 0.54 * RaL**(1/4)          # [-]
+                    elif RaL >= 1e7 and RaL <= 1e11:
+                        Nu = 0.15 * RaL**(1/3)          # [-]
+                    else:
+                        Nu = 0.71 * RaL**(1/4)          # [-]
+
+                else: # cold plate
+                    if RaL >= 1e5 and RaL <= 1e10:
+                        Nu = 0.27*RaL**(1/4)
+                    else:
+                        Nu = 0.71*RaL**(1/4) #[-]
+
+            elif PlateNum == 'lower_surface':
+                if T_wall > T_inf:              # hot plate
+                    if RaL >= 1e5 and RaL <= 1e10:
+                        Nu = 0.27 * RaL**(1/4)          # [-]
+                    else:
+                        Nu = 0.25 * RaL**(1/4)          # [-]
+
+                else: # cold plate
+                    if RaL >= 1e4 and RaL <= 1e7:
+                        Nu = 0.54 * RaL**(1/4)          # [-]
+                    elif RaL >= 1e7 and RaL <= 1e11:
+                        Nu = 0.15 * RaL**(1/3)          # [-]
+                    else:
+                        Nu = 0.25 * RaL**(1/4)          # [-]
+            else:
+                raise Exception('PlateNum must be either upper_surface or lower_surface')
+
+        elif HTCat == 'horizontal_pipe':
+            if RaD <= 1e12:
+                # Churchill and Chu, 1975, RaL->RaD
+                Nu = (0.60 + 0.387 * RaD**(1/6) / (1 + (0.559/Pr_film)**(9/16))**(8/27))**2   # [-]
+
+            else:                       # Kuehn and Goldstein, 1976.
+                temp    = ((0.518 * (RaD**0.25) * (1 + (0.559/Pr_film)**0.6)**(-5/12))**15 + (0.1 * RaD**(1/3))**15)**(1/15)
+                Nu      = 2 / (log(1 + 2 / temp))        # [-]
+
+        elif HTCat == 'vertical_pipe':
+            if (D_pipe/L) < 35/Gr**(1/4):
+                F = 1/3 * ((L/D_pipe) / (1/Gr))**(1/4) + 1      # [-]
+            else:
+                F = 1.0                                         # [-]
+            Nu = F * (0.825 + 0.387 * RaL**(1/6) / (1 + (0.492/Pr_film)**(9/16))**(8/27))**2    # [-]
+
+        else:
+            raise Exception('not implemented')
+
+    # Convective heat transfer coefficient
+    if HTCat == 'horizontal_pipe':
+        h                   = Nu * k_film / D_pipe      # [W/m^2 K]
+    else:
+        h                   = Nu * k_film / L           # [W/m^2 K]
+
+    return h
 
 
 # ------------------------------------------------------------------

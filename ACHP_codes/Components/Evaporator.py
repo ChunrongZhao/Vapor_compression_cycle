@@ -114,7 +114,12 @@ class EvaporatorClass():
                        ('h_in_r',       float,          -100000,        10000000),
                        ('m_dot_r',      float,          0.000001,       10),
                        ]
-            optFields           = ['Verbosity', 'AS', 'h_a_tuning', 'h_tp_tuning', 'DP_tuning']
+            MultiCircuitEvaporator  = True
+            if not MultiCircuitEvaporator:
+                optFields           = ['Verbosity', 'AS', 'h_a_tuning', 'h_tp_tuning', 'DP_tuning']
+            else:
+                optFields           = ['Verbosity', 'AS', 'h_a_tuning', 'h_tp_tuning', 'DP_tuning',
+                                   'TestName', 'TestDescription', 'TestDetails', 'm_dot_r_coeffs', 'm_dot_v_coeffs', 'V_dot_ha_coeffs', 'Evaps']
             d                   = self.__dict__                 # Current fields in model
             ValidateFields(d, reqFields, optFields)
             self.IsValidated    = True
