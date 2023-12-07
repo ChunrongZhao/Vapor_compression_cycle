@@ -20,10 +20,10 @@ class PlotsClass():
 
         Ref                         = Cycle.Ref
 
-        T_min                       = PropsSI('Tmin',Ref)
-        T_max                       = PropsSI('Tmax',Ref)
-        p_min                       = PropsSI('pmin',Ref)
-        p_max                       = PropsSI('pmax',Ref)
+        T_min                       = PropsSI('Tmin', Ref)
+        T_max                       = PropsSI('Tmax', Ref)
+        p_min                       = PropsSI('pmin', Ref)
+        p_max                       = PropsSI('pmax', Ref)
 
         fig                         = plt.figure(figsize=(6, 4))
         self.axes                   = fig.add_subplot(111)

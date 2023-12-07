@@ -1276,7 +1276,9 @@ class PHEHXClass():
                     x_out_c             = min((h_out_c - self.h_sat_L_c) / (self.h_sat_V_c - self.h_sat_L_c), 1)
 
                     if abs(T_in_h - T_out_h) < 1.e-3:
-                        cp_h            = CoolProp.CoolProp.PropsSI('C', 'P', self.p_in_h, 'T', T_in_h, self.Ref_h)
+                        # cp_h            = CoolProp.CoolProp.PropsSI('C', 'P', self.p_in_h, 'T', T_in_h, self.Ref_h)
+                        self.AS_h.update(CP.PT_INPUTS, self.p_in_h, T_in_h)
+                        cp_h            = self.AS_h.cpmass()            # [J/kg]
                     else:
                         cp_h            = (h_in_h - h_out_h) / (T_in_h - T_out_h)
 
