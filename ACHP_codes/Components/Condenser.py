@@ -223,10 +223,10 @@ class CondenserClass():
         self.UA_w           = 1 / self.R_w
 
         # added by Chunrong at 24/11/2023
-        rho_pipe            = 2710          # aluminium
-        rho_fin             = 8960          # copper
-        self.L_COND, self.H_COND, self.W_COND, self.m_COND, self.V_COND = HerringboneFins_Dimensions(self.height_cond, self.L_tube, self.N_bank,
-                        self.P_l, self.secTheta, self.t_f, self.N_fin, rho_fin, self.ID, self.OD, self.N_Tubes_per_bank, rho_pipe, self.Charge)
+        # rho_pipe            = 2710          # aluminium
+        # rho_fin             = 8960          # copper
+        # self.L_COND, self.H_COND, self.W_COND, self.m_COND, self.V_COND = HerringboneFins_Dimensions(self.height_cond, self.L_tube, self.N_bank,
+        #                 self.P_l, self.secTheta, self.t_f, self.N_fin, rho_fin, self.ID, self.OD, self.N_Tubes_per_bank, rho_pipe, self.Charge)
 
         return self.T_out_a
 

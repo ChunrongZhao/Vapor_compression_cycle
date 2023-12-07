@@ -105,7 +105,7 @@ class EvaporatorClass():
     def Initialize(self):
         # Input validation the first call of Initialize
         # if False:
-        if not hasattr(self, 'IsValidated'):
+        if hasattr(self, 'IsValidated'):
             self.Fins.Validate()
             reqFields = [
                        ('p_sat_r',      float,          0.001,          100000000),
@@ -114,7 +114,7 @@ class EvaporatorClass():
                        ('h_in_r',       float,          -100000,        10000000),
                        ('m_dot_r',      float,          0.000001,       10),
                        ]
-            MultiCircuitEvaporator  = True
+            MultiCircuitEvaporator  = False
             if not MultiCircuitEvaporator:
                 optFields           = ['Verbosity', 'AS', 'h_a_tuning', 'h_tp_tuning', 'DP_tuning']
             else:

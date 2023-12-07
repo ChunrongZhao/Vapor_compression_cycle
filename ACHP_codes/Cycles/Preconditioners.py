@@ -1,11 +1,11 @@
-from __future__                         import division, print_function, absolute_import
-from CoolProp.CoolProp                  import HAPropsSI
-from scipy.optimize                     import fsolve, minimize
-from ACHP_codes                         import Correlations
-from math                               import pi
-from ACHP_codes.ACHP_Tools.Solvers      import MultiDimNewtRaph
-import numpy                            as np
-import CoolProp                         as CP
+from __future__                                 import division, print_function, absolute_import
+from CoolProp.CoolProp                          import HAPropsSI
+from scipy.optimize                             import fsolve, minimize
+from ACHP_codes.Correlations.HTC_Correlations   import ShahEvaporation_Average
+from math                                       import pi
+from ACHP_codes.ACHP_Tools.Solvers              import MultiDimNewtRaph
+import numpy                                    as np
+import CoolProp                                 as CP
 
 
 # ------------------------------------------------------------------------------
@@ -53,7 +53,7 @@ def DXPreconditioner(Cycle, epsilon=0.96):
         T_in_a                          = Evap.Fins.Air.T_db
         T_out_a                         = T_in_a + Q_evap_dry / (Evap.Fins.m_dot_da * Evap.Fins.cp_da)
         # Refrigerant-side heat transfer UA
-        UA_r    = Evap.A_r_wetted * Correlations.ShahEvaporation_Average(0.5, 0.5, AS, Evap.G_r, Evap.ID, Evap.p_sat_r,
+        UA_r    = Evap.A_r_wetted * ShahEvaporation_Average(0.5, 0.5, AS, Evap.G_r, Evap.ID, Evap.p_sat_r,
                                             Q_evap_dry/Evap.A_r_wetted, Evap.T_bubble_r, Evap.T_dew_r)
         # Get wall temperatures at inlet and outlet from energy balance
         T_so_a                          = (UA_a * Evap.T_in_a + UA_r * T_evap) / (UA_a + UA_r)

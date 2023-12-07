@@ -521,7 +521,7 @@ class DXCycleClass():
             try:
                 resids  = self.Calculate(DT_evap=float(x[0]), DT_cond=float(x[1]), DT_sh=float(x[2])) #,DP_low=float(x[2]),DP_high=float(x[3]))
             except ValueError:
-                raise
+                raise Exception('Something not correct!')
             return resids
 
         # Use the preconditioner to determine a reasonably good starting guess
@@ -536,37 +536,37 @@ class DXCycleClass():
         print ('-------------------------------------')
 
 
-        GoodRun=False
-        while GoodRun==False:
+        GoodRun                             = False
+        while GoodRun == False:
             try:
-                self.DP_low=0
-                self.DP_high=0
-                DP_converged=False
-                while DP_converged==False:
+                self.DP_low                 = 0
+                self.DP_high                = 0
+                DP_converged                = False
+                while DP_converged == False:
                     # Actually run the Newton-Raphson solver to get the solution
-                    x=Broyden(OBJECTIVE_DXCycle,[DT_evap_init,DT_cond_init,DT_sh_init])
-                    delta_low=abs(self.DP_low-abs(self.DP_LowPressure))
-                    delta_high=abs(self.DP_high-abs(self.DP_HighPressure))
-                    self.DP_low=abs(self.DP_LowPressure)
-                    self.DP_high=abs(self.DP_HighPressure)
+                    x                       = Broyden(OBJECTIVE_DXCycle, [DT_evap_init, DT_cond_init, DT_sh_init])
+                    delta_low               = abs(self.DP_low - abs(self.DP_LowPressure))
+                    delta_high              = abs(self.DP_high - abs(self.DP_HighPressure))
+                    self.DP_low             = abs(self.DP_LowPressure)
+                    self.DP_high            = abs(self.DP_HighPressure)
                     # Update the guess values based on last converged values
-                    DT_evap_init=self.DT_evap
-                    DT_cond_init=self.DT_cond
-                    DT_sh_init=self.DT_sh
-                    if delta_low<1 and delta_high<1:
-                        DP_converged=True
-                    if self.Verbosity>4:
-                        print (self.DP_HighPressure,self.DP_LowPressure,'DPHP')
-                    GoodRun=True
+                    DT_evap_init            = self.DT_evap
+                    DT_cond_init            = self.DT_cond
+                    DT_sh_init              = self.DT_sh
+                    if delta_low < 1 and delta_high < 1:
+                        DP_converged        = True
+                    if self.Verbosity > 4:
+                        print(self.DP_HighPressure, self.DP_LowPressure, 'DPHP')
+                    GoodRun                 = True
             except AttributeError:
                 # This will be a fatal error !! Should never have attribute error
                 raise
             except:
                 print ("--------------  Exception Caught ---------------- ")
-                print ("Error of type",sys.exc_info()[0]," is: " + sys.exc_info()[1].message)
+                print ("Error of type", sys.exc_info()[0], " is: " + sys.exc_info()[1].message)
                 raise
 
-        if self.Verbosity>0:
+        if self.Verbosity > 0:
 
             print ("Debugging Results")
             print ()
