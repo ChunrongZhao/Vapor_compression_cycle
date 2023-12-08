@@ -1,7 +1,7 @@
 """This code is for secondary loop cycle in AC Mode"""
 from __future__                                 import division, absolute_import, print_function
 from ACHP_codes.Cycles.Cycle                    import SecondaryCycleClass
-from ACHP_codes.ACHP_Tools.Plots                import PlotsClass
+from ACHP_codes.ACHP_Tools.Plots                import PlotsClass, SL_PlotsClass
 from time                                       import time
 
 # Instantiate the class
@@ -14,7 +14,7 @@ Cycle                                   = SecondaryCycleClass()
 Cycle.Verbosity                         = 0                     # the idea here is to have different levels of debug output
 Cycle.ImposedVariable                   = 'Subcooling'          # or this could be 'Charge' for imposed charge
 Cycle.DT_sc_target                      = 7.0
-# Cycle.Charge_target                   = 2.4                   # Needed if charge is imposed, not otherwise
+Cycle.CycleType                         = 'Secondary'
 Cycle.Ref                               = 'R410A'
 Cycle.Backend                           = 'HEOS'        # Backend for refrigerant properties calculation: 'HEOS','TTSE&HEOS','BICUBIC&HEOS','REFPROP','SRK','PR'
 Cycle.Oil                               = 'POE32'
@@ -88,37 +88,6 @@ Cycle.Condenser.Fins.Air.FanPower               = 260
 
 Cycle.Condenser.FinsType                        = 'WavyLouveredFins'   # Choose fin Type: 'WavyLouveredFins' or 'HerringboneFins' or 'PlainFins'
 Cycle.Condenser.Verbosity                       = 0
-
-# -----------------------------------------------------------------------------------------
-# Evaporator Parameters todo newly added at 07/12/2023
-# -----------------------------------------------------------------------------------------
-Cycle.Evaporator.Fins.Tubes.N_Tubes_per_bank    = 32
-Cycle.Evaporator.Fins.Tubes.N_bank              = 3
-Cycle.Evaporator.Fins.Tubes.L_tube              = 0.452
-Cycle.Evaporator.Fins.Tubes.OD                  = 0.00913
-Cycle.Evaporator.Fins.Tubes.ID                  = 0.00849
-Cycle.Evaporator.Fins.Tubes.Pl                  = 0.0191
-Cycle.Evaporator.Fins.Tubes.Pt                  = 0.0254
-Cycle.Evaporator.Fins.Tubes.N_circuits          = 5
-Cycle.Evaporator.Fins.Tubes.k_w                 = 237                   # wall thermal conductivity (i.e. pipe material)
-
-Cycle.Evaporator.Fins.Fins.FPI                  = 14.5
-Cycle.Evaporator.Fins.Fins.Pd                   = 0.001
-Cycle.Evaporator.Fins.Fins.xf                   = 0.001
-Cycle.Evaporator.Fins.Fins.t                    = 0.00011
-Cycle.Evaporator.Fins.Fins.k_fin                = 237
-
-Cycle.Evaporator.Fins.Air.V_dot_ha              = 0.56319
-Cycle.Evaporator.Fins.Air.T_mean                = 297.039
-Cycle.Evaporator.Fins.Air.T_db                  = 297.039
-Cycle.Evaporator.Fins.Air.p                     = 101325                # Evaporator Air pressures in Pa
-Cycle.Evaporator.Fins.Air.RH                    = 0.5
-Cycle.Evaporator.Fins.Air.RH_mean               = 0.5
-Cycle.Evaporator.Fins.Air.FanPower              = 438
-
-Cycle.Evaporator.FinsType                       = 'WavyLouveredFins'    # WavyLouveredFins, HerringboneFins, PlainFins
-Cycle.Evaporator.Verbosity                      = 0
-Cycle.Evaporator.DT_sh                          = 5                     # target superheat
 
 # ----------------------------------------------------------------------------------
 # Cooling Coil parameters
@@ -277,6 +246,6 @@ print('Cycle coefficient of system performance is ' + str(Cycle.COSP))
 print('Cycle refrigerant charge is ' + str(Cycle.Charge) + ' kg')
 
 # Now do cycle plotting
-plot                                            = PlotsClass()
+plot                                            = SL_PlotsClass()
 plot.TSOverlay(Cycle)
 plot.PHOverlay(Cycle)

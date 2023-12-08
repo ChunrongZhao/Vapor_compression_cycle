@@ -1,5 +1,5 @@
 import pylab,numpy as np
-from CoolProp.Plots import Ts
+from CoolProp.Plots import PropertyPlot
 from CoolProp.CoolProp import PropsSI
 
 fig=pylab.figure(figsize=(8,4))
@@ -23,7 +23,8 @@ ax.axis('equal')
 ax.axis('off')
 
 ax2=fig.add_axes((0.6,0.2,0.35,0.7))
-Ts('R134a',axis=ax2)
+# Ts('R134a',axis=ax2)
+# ax2.PropertyPlot(('R134a','Ts')
 p = PropsSI('P','T',280,'Q',0.0,'R134a')
 T1 = np.linspace(270,279.9,100)
 T2 = np.linspace(280.1,300,100)

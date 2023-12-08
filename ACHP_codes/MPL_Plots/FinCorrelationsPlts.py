@@ -4,10 +4,10 @@ from CoolProp.CoolProp import PropsSI
 import numpy as np
 import pylab as pylab
 from math import pi
-#from PyACHP.Correlations import AccelPressureDrop, LockhartMartinelli
-from ACHP.FinCorrelations import WavyLouveredFins,HerringboneFins,FinInputs,PlainFins
+# from PyACHP.Correlations import AccelPressureDrop, LockhartMartinelli
+from ACHP_codes.Correlations.FinStructure_Correlations import  WavyLouveredFins,HerringboneFins,FinInputs,PlainFins
 
-#example evaporator
+# example evaporator
 FinsTubes=FinInputs()
 
 FinsTubes.Tubes.NTubes_per_bank=32

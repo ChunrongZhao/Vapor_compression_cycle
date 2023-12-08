@@ -121,7 +121,7 @@ class CompressorClass():
 
         P1                                  = self.p_in_r
         P2                                  = self.p_out_r
-        T1_actual                           = self.T_sat_s_K + self.DT_sh_K
+        T1_actual                           = self.T_sat_s_K + self.DT_sh_K     # T_sat_d_K
         T1_map                              = self.T_sat_s_K + 20 * 5 / 9
 
         AS.update(CP.PT_INPUTS, P1, T1_map)
@@ -164,9 +164,9 @@ class CompressorClass():
         # Estimate refrigerant dissolved in the oil sump
         T_ave                               = (T1_actual + self.T_out_r) / 2
         if self.shell_pressure == 'high-pressure':
-            p_shell                         = P2
+            p_shell                         = P2        # outlet pressure
         elif self.shell_pressure == 'low-pressure':
-            p_shell                         = P1
+            p_shell                         = P1        # inlet pressure
 
         self.x_Ref, error                   = Solubility_Ref_in_Liq(self.Ref, self.Oil, T_ave, p_shell/1000)
 
