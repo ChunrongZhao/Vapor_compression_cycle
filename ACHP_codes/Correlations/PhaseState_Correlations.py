@@ -7,7 +7,7 @@ import CoolProp         as CP
 
 # Machine precision
 machine_eps = np.finfo(float).eps
-print(machine_eps)
+print(machine_eps, '; num=1')
 
 
 # ------------------------------------------------------------------

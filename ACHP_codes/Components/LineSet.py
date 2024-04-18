@@ -257,7 +257,7 @@ class LineSetOptionClass():
                 self.Charge                 = pi * self.ID**2 / 4.0 * self.L * rho
 
             else:                                           # LineSetOption == 'Off'
-                print('lineSetOption is off for ' + str(self.Name))
+                print('lineSetOption is off for ' + str(self.Name), '******** at Line 260 of LineSet.py')
                 self.T_out                  = self.T_in
 
                 # Inlet specific entropy

@@ -299,7 +299,7 @@ def Solubility_Ref_in_Liq(Ref, Liq, T, p):
         x_Ref                   = 0.0
 
     else:
-        print("Ref/Liquid [%s/%s] not implemented" %(Ref,Liq))
+        print("Ref/Liquid [%s/%s] not implemented" %(Ref,Liq), "******* at Line 302 of OilPropLib.py")
         x_Ref                   = 0.0
     if T < T_min or T > T_max:
         # print "Error: T[%0.2f] out of range [%0.2f,%0.2f]" %(T,Tmin,Tmax)

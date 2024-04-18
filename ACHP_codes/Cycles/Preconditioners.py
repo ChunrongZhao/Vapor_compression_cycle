@@ -1,7 +1,7 @@
 from __future__                                 import division, print_function, absolute_import
 from CoolProp.CoolProp                          import HAPropsSI
 from scipy.optimize                             import fsolve, minimize
-from ACHP_codes.Correlations.HTC_Correlations   import ShahEvaporation_Average
+from ACHP_codes.Correlations.HTC_Correlations   import ShahEvaporation_Average, f_h_1phase_Tube
 from math                                       import pi
 from ACHP_codes.ACHP_Tools.Solvers              import MultiDimNewtRaph
 import numpy                                    as np
@@ -144,7 +144,7 @@ def SecondaryLoopPreconditioner(Cycle, epsilon=0.9):
             T_out_a                     = CC.T_in_a - Q_coolingcoil_dry / (CC.Fins.m_dot_a * CC.Fins.cp_a)
 
             # Refrigerant side UA
-            f, h, Re    = Correlations.f_h_1phase_Tube(Cycle.Pump.m_dot_g/CC.N_circuits, CC.ID, T_in_CC, CC.p_in_g, CC.AS_g)
+            f, h, Re    = f_h_1phase_Tube(Cycle.Pump.m_dot_g/CC.N_circuits, CC.ID, T_in_CC, CC.p_in_g, CC.AS_g)
             UA_r                        = CC.A_g_wetted * h
             # Glycol specific heat
             AS_SLF.update(CP.PT_INPUTS, Cycle.Pump.p_in_g, T_in_CC)
@@ -180,6 +180,9 @@ def SecondaryLoopPreconditioner(Cycle, epsilon=0.9):
             AS.update(CP.PT_INPUTS, p_cond, T_cond - Cycle.DT_sc_target)
             h_target                    = AS.hmass()                # [J/kg]
             Q_cond_enthalpy             = Cycle.Compressor.m_dot_r * (Cycle.Compressor.h_out_r - h_target)
+            # 1 - condenser power + evaporator power - compressor power -> 0 ;
+            # 2 - for condenser, refrigerant dissipation - air heat absorption -> 0;
+            # 3 - for cooling coil, same as above
             resids                      = [Q_IHX + W + Q_cond, Q_cond + Q_cond_enthalpy, Q_coolingcoil - Q_IHX]
             return resids
 
@@ -246,3 +249,119 @@ def SecondaryLoopPreconditioner(Cycle, epsilon=0.9):
         raise ValueError()
 
     return DT_evap - 2, DT_cond + 2, T_in_CC
+
+
+# ------------------------------------------------------------------------------
+def BTMS_SecondaryLoopPreconditioner(Cycle, epsilon=0.9):
+    rho_air                             = 1.1                   # [kg/m^2]
+    Cp_air                              = 1005                  # [J/kg-K]
+
+    # AbstractState for refrigerant
+    AS                                  = Cycle.AS
+    # AbstractState for SecLoopFluid
+    AS_SLF                              = Cycle.AS_SLF
+
+    def OBJECTIVE(x):
+        T_evap                          = x[0]
+        T_cond                          = x[1]
+        T_in_WC                         = x[2]  # wavychannel inlet temperature, T5
+        if Cycle.Mode == 'AC':
+            # Condenser heat transfer rate
+            Q_cond      = epsilon * Cycle.Condenser.Fins.Air.V_dot_ha * rho_air * (Cycle.Condenser.Fins.Air.T_db - T_cond) * Cp_air
+
+            # Compressor power
+            AS.update(CP.QT_INPUTS, 1.0, T_evap)
+            p_evap                      = AS.p()                # [Pa]
+            AS.update(CP.QT_INPUTS, 1.0, T_cond)
+            p_cond                      = AS.p()                # [Pa]
+            Cycle.Compressor.p_in_r     = p_evap
+            Cycle.Compressor.p_out_r    = p_cond
+            Cycle.Compressor.T_in_r     = T_evap + Cycle.Compressor.DT_sh
+            Cycle.Compressor.Ref        = Cycle.Ref
+            Cycle.Compressor.AS         = Cycle.AS
+            Cycle.Compressor.Calculate()
+            W                           = Cycle.Compressor.W
+
+            # todo need to be revised
+            Q_wavychannel               = Cycle.WavyChannel.Q_wavychannel   # todo check
+            # Glycol specific heat
+            # WC is wavy channel
+            AS_SLF.update(CP.PT_INPUTS, Cycle.Pump.p_in_g, T_in_WC)
+            cp_g                        = AS_SLF.cpmass()                   # [J/kg-K]
+
+            # Air-side heat transfer UA
+            T_in_IHX                    = T_in_WC + Q_wavychannel / (Cycle.Pump.m_dot_g * cp_g)
+            Q_IHX                       = epsilon * Cycle.Pump.m_dot_g * cp_g * (T_in_IHX - T_evap)
+
+            AS.update(CP.PT_INPUTS, p_cond, T_cond - Cycle.DT_sc_target)
+            h_target                    = AS.hmass()                # [J/kg]
+            Q_cond_enthalpy             = Cycle.Compressor.m_dot_r * (Cycle.Compressor.h_out_r - h_target)
+            # 1 - for refrigeration loop, condenser power + evaporator power - compressor power -> 0 ;
+            # 2 - for condenser, refrigerant dissipation (compressor) - air heat absorption by condenser -> 0;
+            # 3 - for secondary loop, wavychannel heat - evaporator heat -> 0
+            resids                      = [Q_IHX + W + Q_cond, Q_cond + Q_cond_enthalpy, Q_wavychannel - Q_IHX]
+            return resids
+
+        elif Cycle.Mode == 'HP':
+            # Evaporator heat transfer rate
+            Q_evap      = epsilon * Cycle.Evaporator.Fins.Air.V_dot_ha * rho_air * (Cycle.Evaporator.Fins.Air.T_db - T_evap) * Cp_air
+
+            # Compressor power
+            AS.update(CP.QT_INPUTS, 1.0, T_evap)
+            p_evap                      = AS.p()                    # [pa]
+            AS.update(CP.QT_INPUTS, 1.0, T_cond)
+            p_cond                      = AS.p()                    # [pa]
+            Cycle.Compressor.p_in_r     = p_evap
+            Cycle.Compressor.p_out_r    = p_cond
+            Cycle.Compressor.T_in_r     = T_evap + Cycle.Evaporator.DT_sh
+            Cycle.Compressor.Ref        = Cycle.Ref
+            Cycle.Compressor.AS         = Cycle.AS
+            Cycle.Compressor.Calculate()
+            W                           = Cycle.Compressor.W
+
+            # Evaporator will be dry
+            Q_wavychannel               = Cycle.WavyChannel.Q_wavychannel   # todo check
+
+            # Glycol specifi heat
+            AS_SLF.update(CP.PT_INPUTS, Cycle.Pump.p_in_g, T_in_WC)
+            cp_g                        = AS_SLF.cpmass()           # [J/kg/K]
+
+            T_in_IHX                    = T_in_WC - Q_wavychannel / (Cycle.Pump.m_dot_g * cp_g)
+            Q_IHX                       = epsilon * Cycle.Pump.m_dot_g * cp_g * (T_in_IHX - T_cond)
+
+            AS.update(CP.PT_INPUTS, p_cond, T_cond - Cycle.DT_sc_target)
+            h_target                    = AS.hmass()                # [J/kg]
+            Q_IHX_enthalpy              = Cycle.Compressor.m_dot_r * (Cycle.Compressor.h_out_r - h_target)
+
+            resids                      = [Q_IHX + W + Q_evap, Q_IHX + Q_IHX_enthalpy, Q_wavychannel + Q_IHX]
+            return resids
+
+    solverFunc                          = fsolve
+    if Cycle.Mode == 'AC':
+        T_evap_init                     = Cycle.T_bat - 15
+        T_cond_init                     = Cycle.Condenser.Fins.Air.T_db + 8
+        T_in_WC                         = T_evap_init + 1
+        # First try using the fsolve algorithm
+        try:
+            x                           = fsolve(OBJECTIVE, [T_evap_init, T_cond_init, T_in_WC])
+        except:
+            # If that doesnt work, try the Mult-Dimensional Newton-raphson solver
+            try:
+                x                       = MultiDimNewtRaph(OBJECTIVE, [T_evap_init, T_cond_init, T_in_WC])
+            except:
+                x                       = [T_evap_init, T_cond_init, 284]
+        DT_evap                         = Cycle.T_bat - x[0]
+        DT_cond                         = x[1] - Cycle.Condenser.Fins.Air.T_db
+        T_in_WC                         = x[2]
+    elif Cycle.Mode == 'HP':
+        T_evap_init                     = Cycle.T_bat - 8
+        T_cond_init                     = Cycle.CoolingCoil.Fins.Air.T_db + 15
+        T_in_WC                         = T_cond_init - 1
+        x                               = solverFunc(OBJECTIVE, [T_evap_init, T_cond_init, T_in_WC])
+        DT_evap                         = Cycle.Evaporator.Fins.Air.T_db - x[0]
+        T_in_WC                         = x[2]
+        DT_cond                         = x[1] - T_in_WC
+    else:
+        raise ValueError()
+
+    return DT_evap - 2, DT_cond + 2, T_in_WC

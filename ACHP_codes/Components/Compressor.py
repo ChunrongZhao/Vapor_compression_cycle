@@ -107,6 +107,7 @@ class CompressorClass():
         T_sat_d                             = self.T_sat_d_K * 9/5 - 459.67
 
         # Apply the 10 coefficient ARI map to saturation temps in F
+        # p=P[0][9]
         power_map       = P[0] + P[1] * T_sat_s + P[2] * T_sat_d + P[3] * T_sat_s**2 + P[4] * T_sat_s * T_sat_d + P[5] * T_sat_d**2 \
                           + P[6] * T_sat_s**3 + P[7] * T_sat_d * T_sat_s**2 + P[8] * T_sat_d**2*T_sat_s + P[9] * T_sat_d**3
         m_dot_map       = M[0] + M[1] * T_sat_s + M[2] * T_sat_d + M[3] * T_sat_s**2 + M[4] * T_sat_s * T_sat_d + M[5] * T_sat_d**2 \
