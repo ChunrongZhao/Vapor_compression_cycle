@@ -29,7 +29,7 @@ def Main_Design(m_dot_h, N_series, N_parallel):
     T_i                             = BatInputs['T_amb'][0]+35
     T_amb                           = BatInputs['T_amb']+35
     T_current                       = BatInputs['T_b_air'][0]+35
-
+    # Q_heat_gen                      = BatInputs['Q_bat'] * 10
     VCS_results                     = {'T_bat': [], 'T_i': [], 'T_o': [], 'COP': [], 'Power': [], 'mission_time': []}
 
     for i in range(1, len(BatInputs['Q_bat'])):

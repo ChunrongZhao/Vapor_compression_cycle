@@ -200,6 +200,7 @@ class WavyChan_NMC():
             Channels_in_a_module = 130*15/(65*2)
         else:           # otherwise it is a stopped rotor aircraft
             Channels_in_a_module = 100*14/(50*2)
+
         NTU = h_tot * A_chan_module / (m_dot_unit * Channels_in_a_module * cp_coolant)
         Tw_To = Tw_Ti * np.exp(-NTU)
 

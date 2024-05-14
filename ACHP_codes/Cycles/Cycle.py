@@ -2587,7 +2587,8 @@ class BTMS_SecondaryCycleClass():
             ('SHR',                     '-',            self.SHR),
             ('Condensation temp (dew)', 'K',            self.T_dew_cond),
             ('Evaporation temp (dew)',  'K',            self.T_dew_evap),
-            ('Wavychannel coolant temp (dew)', 'K',     self.WavyChannel.T_out_g)]
+            ('Wavychannel coolant temp (dew)', 'K',     self.WavyChannel.T_out_g),
+        ]
 
     def Calculate(self, DT_evap, DT_cond, T_in_WC):
         """
@@ -2906,7 +2907,8 @@ class BTMS_SecondaryCycleClass():
                       % (resid[0], resid[1], self.resid_SL, self.Charge, self.Condenser.DT_sc))
 
             # -----------------------------------------------------------------------------
-            self.Capacity                   = self.WavyChannel.Q_wavychannel
+            # self.Capacity                   = self.WavyChannel.Q_wavychannel
+            self.Capacity                   = self.PHEIHX.Q
             self.COP                        = self.WavyChannel.Q_wavychannel / self.Compressor.W
             self.COSP       = self.Capacity / (self.Compressor.W + self.Pump.W + self.Condenser.Fins.Air.FanPower)
             self.Power      = self.Compressor.W + self.Pump.W + self.Condenser.Fins.Air.FanPower

@@ -44,7 +44,7 @@ class WavyChannelCoolerClass():
         AS_g.update(CP.PT_INPUTS, self.p_in_g, self.T_in_g)
         cp_g                            = AS_g.cpmass()            # [J/kg K]
 
-        self.T_out_g = self.T_in_g + self.Q_wavychannel / cp_g
+        self.T_out_g = self.T_in_g + self.Q_wavychannel / (self.m_dot_g * cp_g)
 
         print('T_in_wc = ', self.T_in_g, 'T_out_wc = ', self.T_out_g)
 

@@ -25,7 +25,7 @@ def CoolProp_AbstractState_test1():
     print('h = ', h, ' [J/kg]')
 
 
-def BTMS_VCS_SL(Q_wavychannel=12500, m_dot_g=0.38, T_bat=289.15, T_amb=308.15):
+def BTMS_VCS_SL(Q_wavychannel=10000, m_dot_g=0.38, T_bat=289.15+10, T_amb=308.15+10):
     # Instantiate the class
     Cycle                                   = BTMS_SecondaryCycleClass()
 
@@ -263,20 +263,21 @@ def BTMS_VCS_SL(Q_wavychannel=12500, m_dot_g=0.38, T_bat=289.15, T_amb=308.15):
     print('Cycle refrigerant charge is ' + str(Cycle.Charge) + ' kg')
 
     # Now do cycle plotting
-    Plot_result     = 1
+    Plot_result     = 0
     if Plot_result:
         plot                                            = BTMS_SL_PlotsClass()
         plot.TSOverlay(Cycle)
         plot.PHOverlay(Cycle)
 
-    return Cycle.COSP, Cycle.Power, Cycle.WavyChannel.T_out_g
+    return Cycle.COSP, Cycle.Power, Cycle.WavyChannel.T_out_g,Cycle.Compressor.m_dot_r, Cycle.PHEIHX.Q, Cycle.WavyChannel.Q_wavychannel
 
 
 # ------------------------------------------------------------------------------------
 if __name__ == '__main__':
     # print('why')
     # CoolProp_AbstractState_test1()
-    BTMS_VCS_SL()
+    X, Y, Z, aa, bb, cc = BTMS_VCS_SL()
+    print('refrigerant mass flow rate: ', aa, 'kg/s; refrigerant capacity: ', bb, 'W; wavychannel capacity: ', cc, 'W')
     # AS_SLF         = CP.AbstractState('INCOMP', 'MEG')
     # AS_SLF.update(CP.PT_INPUTS, 101325, 293.15)
     # h              = AS_SLF.hmass()
