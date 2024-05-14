@@ -67,7 +67,7 @@ class LatentHeatThermalEnergyStorage:
         self.h_sf_eff           = h_sf_eff
         self.T_melt             = T_melt
 
-    def LHTES_fluid_cal(self, m_dot_coolant=None, T_i_coolant=None, r_melt_front=None, dr_melt_front=None, dt=None, eff_PUMP=0.7):
+    def LHTES_fluid_cal(self, m_dot_coolant=None, T_i_coolant=None, r_melt_front=None, dt=None, eff_PUMP=0.7):
         # todo check: r_melt_front < self._LHTES_thickness
         # --------------Reynold number ---------------------------------
         # hydraulic diameter
@@ -106,6 +106,7 @@ class LatentHeatThermalEnergyStorage:
         # heat transfer coefficient of channeled coolant fluid
         h_coolant = self._coolant_k * Nu / d_H
         # total heat transfer coefficient
+        self.LHTES_composite_properties()
         h_tot = 1 / (1 / h_coolant + self._subchannel_tw / self._subchannel_k + r_melt_front / self.k_eff)
 
         # -------------- heat transfer area --------------------------------------
@@ -154,3 +155,18 @@ class LatentHeatThermalEnergyStorage:
                    + self.rho_eff * (self._subchannel_height * self._LHTES_thickness)
         # total mass
         m_LHTES     = rho_line * self._subchannel_length
+
+        return A_LHTES, P_LHTES, m_LHTES, r_melt_front, T_o_coolant, Q_conv, eff_LHTES_check, Q_conv_check
+
+
+if __name__ == '__main__':
+    LHTES = LatentHeatThermalEnergyStorage()
+    T_i_coolant = 35 + 273.15
+    r_melt_front = 0
+    m_dot_coolant = 1.
+    dt = 5
+    A_LHTES, P_LHTES, m_LHTES, r_melt_front, T_o_coolant, Q_conv, eff_LHTES_check, Q_conv_check \
+        = LHTES.LHTES_fluid_cal(m_dot_coolant=m_dot_coolant, r_melt_front=r_melt_front, T_i_coolant=T_i_coolant, dt=dt)
+    print(eff_LHTES_check, Q_conv_check)
+    print(A_LHTES, P_LHTES, m_LHTES)
+    print(r_melt_front, T_o_coolant, Q_conv)

@@ -244,6 +244,8 @@ Cycle.PreconditionedSolve()
 print('Took ' + str(time() - t1) + ' seconds to run Cycle model')
 print('Cycle coefficient of system performance is ' + str(Cycle.COSP))
 print('Cycle refrigerant charge is ' + str(Cycle.Charge) + ' kg')
+print('1122')
+print('Cooling coil heat is ' + str(Cycle.CoolingCoil.Q) + ' W')
 
 # Now do cycle plotting
 plot                                            = SL_PlotsClass()

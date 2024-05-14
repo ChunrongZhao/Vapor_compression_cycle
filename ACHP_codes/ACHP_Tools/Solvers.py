@@ -11,7 +11,7 @@ def MultiDimNewtRaph(f, x0, dx=1e-6, args=(), ytol=1e-5, w=1.0, JustOneStep=Fals
     re-using the information as in the fsolve method of scipy.optimize
     """
     # Convert to numpy array, force type conversion to float
-    x                                   = np.array(x0, dtype=np.float)
+    x                                   = np.array(x0, dtype=float)
     error                               = 999
     J                                   = np.zeros((len(x), len(x)))
 
