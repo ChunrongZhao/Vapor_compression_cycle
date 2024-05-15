@@ -2907,8 +2907,8 @@ class BTMS_SecondaryCycleClass():
                       % (resid[0], resid[1], self.resid_SL, self.Charge, self.Condenser.DT_sc))
 
             # -----------------------------------------------------------------------------
-            # self.Capacity                   = self.WavyChannel.Q_wavychannel
-            self.Capacity                   = self.PHEIHX.Q
+            self.Capacity                   = self.WavyChannel.Q_wavychannel
+            # self.Capacity                   = self.PHEIHX.Q
             self.COP                        = self.WavyChannel.Q_wavychannel / self.Compressor.W
             self.COSP       = self.Capacity / (self.Compressor.W + self.Pump.W + self.Condenser.Fins.Air.FanPower)
             self.Power      = self.Compressor.W + self.Pump.W + self.Condenser.Fins.Air.FanPower

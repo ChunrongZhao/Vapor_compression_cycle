@@ -8,6 +8,7 @@
 import os
 import pickle
 from ACHP_codes.Components.WavyChan import WavyChan_NMC, WavyChan_data
+from ACHP_codes.Components.ThermalStorage import LatentHeatThermalEnergyStorage
 from ACHP_codes.CycleTests.SL_BatteryThermalManagementSystem import BTMS_VCS_SL
 from matplotlib import rcParams, rc, font_manager
 import matplotlib as mpl
@@ -32,6 +33,9 @@ def Main_Design(m_dot_h, N_series, N_parallel):
     # Q_heat_gen                      = BatInputs['Q_bat'] * 10
     VCS_results                     = {'T_bat': [], 'T_i': [], 'T_o': [], 'COP': [], 'Power': [], 'mission_time': []}
 
+    LHTES                           = LatentHeatThermalEnergyStorage()
+    r_melt_front                    = 0.
+    Heat_accumulated                = 0.
     for i in range(1, len(BatInputs['Q_bat'])):
         # ---------------------------------------------------------------------
         #   Heat Exchange between the Battery and Wavy Channel
@@ -47,7 +51,12 @@ def Main_Design(m_dot_h, N_series, N_parallel):
 
         Q_wavychannel                                       = Q_conv * 10
         T_bat                                               = T_current
-        COP, Power, T_chan_o                                = BTMS_VCS_SL(Q_wavychannel=Q_wavychannel, m_dot_g=m_dot_h, T_bat=T_bat, T_amb=T_amb[i])
+
+        T_o_coolant, Heat_accumulated, m_LHTES \
+            = LHTES.SimplifiedLHTES(m_dot_coolant=m_dot_h, Q_wavychannel=Q_wavychannel, T_i_coolant=T_o,
+                                    dt=BatInputs['time'][i]-BatInputs['time'][i-1], Heat_accumulated=Heat_accumulated, Q_evap_design=1e4)
+
+        COP, Power, T_chan_o         = BTMS_VCS_SL(Q_wavychannel=Q_wavychannel, m_dot_g=m_dot_h, T_bat=T_bat, T_amb=T_amb[i])
         # -----------------------------------------------------------------
         VCS_results['mission_time'].append(BatInputs['time'][i]-BatInputs['time'][0])
         VCS_results['T_bat'].append(T_current)
@@ -190,7 +199,7 @@ if __name__ == '__main__':
     N_series                        = 150
     N_parallel                      = 130
     # coolant mass flow rate
-    m_dot_h                         = 0.38
+    m_dot_h                         = 1.
 
     Main_Design(m_dot_h, N_series, N_parallel)
 

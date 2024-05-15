@@ -45,13 +45,13 @@ class LatentHeatThermalEnergyStorage:
     def __init__(self):
         self.tag                = "PCM_GF_composite"
         self._subchannel_width  = 2e-3  # d
-        self._subchannel_height = 6e-2  # c
-        self._subchannel_tw     = 1e-3  # b
+        self._subchannel_height = 0.2   # c
+        self._subchannel_tw     = 1e-4  # b
         self._subchannel_rho    = 2719  # kg/m3
         self._subchannel_k      = 202.4 # W/m.K
-        self._subchannel_number = 20    # todo check
-        self._subchannel_length = 0.2   # todo check
-        self._LHTES_thickness   = 1e-1  # todo check
+        self._subchannel_number = 40    # todo check
+        self._subchannel_length = 0.4   # todo check
+        self._LHTES_thickness   = 1e-2  # todo check
         self._coolant_rho       = 1075  # kg/m3
         self._coolant_k         = 0.387 # W/m.K
         self._coolant_cp        = 3300
@@ -110,7 +110,7 @@ class LatentHeatThermalEnergyStorage:
         h_tot = 1 / (1 / h_coolant + self._subchannel_tw / self._subchannel_k + r_melt_front / self.k_eff)
 
         # -------------- heat transfer area --------------------------------------
-        A_LHTES         = self._subchannel_height * self._subchannel_length * self._subchannel_number
+        A_LHTES         = 2* self._subchannel_height * self._subchannel_length * self._subchannel_number
         # NTU value
         NTU             = h_tot * A_LHTES / (m_dot_coolant * self._coolant_cp)
         # efficiency
@@ -134,7 +134,7 @@ class LatentHeatThermalEnergyStorage:
         # --------------- PCM melting distance ----------------------------------
         # 0 < r_melt_front < self._LHTES_thickness
         # melt rate: kg/s
-        m_dot_melt      = Q_conv / self.h_sf_eff
+        m_dot_melt      = - Q_conv / self.h_sf_eff
         dr_melt_front   = m_dot_melt / (self.rho_eff * A_LHTES)
         # linear rate: m/s
         dr_by_dt        = dr_melt_front / dt
@@ -151,18 +151,26 @@ class LatentHeatThermalEnergyStorage:
 
         # ----------- LHTES Mass -------------------------------------------------
         # line density of a cross-section
-        rho_line = self._subchannel_rho * (self._subchannel_height * self._subchannel_tw * 2) + self._coolant_rho * A_c_chan \
-                   + self.rho_eff * (self._subchannel_height * self._LHTES_thickness)
+        rho_line = (self._subchannel_rho * (self._subchannel_height * self._subchannel_tw * 2) + self._coolant_rho * A_c_chan
+                    + self.rho_eff * (self._subchannel_height * self._LHTES_thickness)) * self._subchannel_number
         # total mass
         m_LHTES     = rho_line * self._subchannel_length
 
         return A_LHTES, P_LHTES, m_LHTES, r_melt_front, T_o_coolant, Q_conv, eff_LHTES_check, Q_conv_check
 
+    def SimplifiedLHTES(self, m_dot_coolant=None, Q_wavychannel=None, T_i_coolant=None, dt=None, Heat_accumulated=None, Q_evap_design=1e4):
+        T_o_coolant         = T_i_coolant + (Q_evap_design - Q_wavychannel) / (m_dot_coolant * self._coolant_cp)
+        Heat_accumulated    = Heat_accumulated + (Q_wavychannel - Q_evap_design) * dt
+        self.LHTES_composite_properties()
+        m_LHTES             = Heat_accumulated / self.h_sf_eff
+
+        return T_o_coolant, Heat_accumulated, m_LHTES
+
 
 if __name__ == '__main__':
     LHTES = LatentHeatThermalEnergyStorage()
     T_i_coolant = 35 + 273.15
-    r_melt_front = 0
+    r_melt_front = 0.001
     m_dot_coolant = 1.
     dt = 5
     A_LHTES, P_LHTES, m_LHTES, r_melt_front, T_o_coolant, Q_conv, eff_LHTES_check, Q_conv_check \

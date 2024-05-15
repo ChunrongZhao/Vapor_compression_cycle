@@ -5,8 +5,9 @@ from ACHP_codes.ACHP_Tools.Plots                import PlotsClass, SL_PlotsClass
 from time                                       import time
 import pickle
 import CoolProp.CoolProp                        as CP
-
-
+import os
+from ACHP_codes.Components.WavyChan import WavyChan_NMC, WavyChan_data
+from ACHP_codes.Components.ThermalStorage import LatentHeatThermalEnergyStorage
 # ------------------------------------------------------------------------------------
 def CoolProp_AbstractState_test1():
     Backend_SLF             = 'INCOMP'
@@ -25,7 +26,7 @@ def CoolProp_AbstractState_test1():
     print('h = ', h, ' [J/kg]')
 
 
-def BTMS_VCS_SL(Q_wavychannel=12500, m_dot_g=0.38, T_bat=289.15, T_amb=308.15):
+def BTMS_VCS_SL(Q_wavychannel=10000, m_dot_g=0.38, T_bat=289.15, T_amb=308.15):
     # Instantiate the class
     Cycle                                   = BTMS_SecondaryCycleClass()
 
@@ -127,24 +128,6 @@ def BTMS_VCS_SL(Q_wavychannel=12500, m_dot_g=0.38, T_bat=289.15, T_amb=308.15):
             'Adj':                                  0.7630,                 # Adjust the diameter (tuning factor)
         }
     Cycle.ExpDev.Update(**params)
-
-    # ----------------------------------------------------------------------------------
-    #       IHX Coaxial Exchanger
-    # ----------------------------------------------------------------------------------
-    # params  = {
-    #         'ID_i':                                 0.0278,
-    #         'OD_i':                                 0.03415,
-    #         'ID_o':                                 0.045,
-    #         'L':                                    50,
-    #         'p_in_g':                               350.9e3,
-    #         'Verbosity':                            0
-    #         }
-    # Cycle.CoaxialIHX.Update(**params)
-    # R134a         T_sat           P_sat
-    #               0               294.0e3
-    #               5               350.9e3
-    #               10              415.8e3
-    #               15              489.5e3
 
     # ----------------------------------------------------------------------------------
     #       IHX Plate Heat Exchanger
@@ -263,20 +246,64 @@ def BTMS_VCS_SL(Q_wavychannel=12500, m_dot_g=0.38, T_bat=289.15, T_amb=308.15):
     print('Cycle refrigerant charge is ' + str(Cycle.Charge) + ' kg')
 
     # Now do cycle plotting
-    Plot_result     = 1
+    Plot_result     = 0
     if Plot_result:
         plot                                            = BTMS_SL_PlotsClass()
         plot.TSOverlay(Cycle)
         plot.PHOverlay(Cycle)
 
-    return Cycle.COSP, Cycle.Power, Cycle.WavyChannel.T_out_g
+    return Cycle.COSP, Cycle.Power, Cycle.PHEIHX.T_out_h, Cycle.WavyChannel.T_out_g, Cycle.LineSetReturn.T_out
+
+
+def Main_Design(m_dot_h, N_series, N_parallel):
+    address                         = os.getcwd()
+    with open(address + '\BatInputs_for_VCS.pkl', 'rb') as f:
+        BatInputs                   = pickle.load(f)
+
+    # print(BatInputs['Q_bat'])
+
+    WavyChan                        = WavyChan_NMC()
+    results_chan                    = WavyChan_data()
+    T_i                             = BatInputs['T_amb'][0]+35
+    T_amb                           = BatInputs['T_amb']+35
+    T_current                       = BatInputs['T_b_air'][0]+35
+    # Q_heat_gen                      = BatInputs['Q_bat'] * 10
+    VCS_results                     = {'T_bat': [], 'T_i': [], 'T_o': [], 'COP': [], 'Power': [], 'mission_time': []}
+
+    LHTES                           = LatentHeatThermalEnergyStorage()
+    r_melt_front                    = 0.
+    Heat_accumulated                = 0.
+    for i in range(1, len(BatInputs['Q_bat'])):
+        # ---------------------------------------------------------------------
+        #   Heat Exchange between the Battery and Wavy Channel
+        # ---------------------------------------------------------------------
+        """perform wavy channel calculation"""
+        T_current, Q_conv, T_o, delta_P_chan                = WavyChan.compute_net_generated_battery_heat_module(Q_heat_gen=BatInputs['Q_bat'][i],
+                                                                   m_dot_coolant=m_dot_h, T_cell=T_current,
+                                                                   T_i=T_i, dt=BatInputs['time'][i]-BatInputs['time'][i-1],
+                                                                   N_series=N_series, N_parallel=N_parallel)
+
+        P_chan, m_chan, eff_WavyChan                        = WavyChan.compute_power_and_mass(m_dot_coolant=m_dot_h,
+                                                                              N_series=N_series, N_parallel=N_parallel)
+
+        Q_wavychannel                                       = Q_conv * 10
+        T_bat                                               = T_current
+
+        T_o_coolant, Heat_accumulated, m_LHTES \
+            = LHTES.SimplifiedLHTES(m_dot_coolant=m_dot_h, Q_wavychannel=Q_wavychannel, T_i_coolant=T_o,
+                                    dt=BatInputs['time'][i]-BatInputs['time'][i-1], Heat_accumulated=Heat_accumulated, Q_evap_design=1e4)
+
+        COP, Power, T_chan_o         = BTMS_VCS_SL(Q_wavychannel=Q_wavychannel, m_dot_g=m_dot_h, T_bat=T_bat, T_amb=T_amb[i])
 
 
 # ------------------------------------------------------------------------------------
 if __name__ == '__main__':
     # print('why')
     # CoolProp_AbstractState_test1()
-    BTMS_VCS_SL()
+
+    COP, Power, T_out_h, T_out_g, T_in_h = BTMS_VCS_SL()
+    print(COP, Power, T_out_h, T_out_g, T_in_h)
+
     # AS_SLF         = CP.AbstractState('INCOMP', 'MEG')
     # AS_SLF.update(CP.PT_INPUTS, 101325, 293.15)
     # h              = AS_SLF.hmass()
