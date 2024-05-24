@@ -16,13 +16,18 @@ from pathlib                        import Path
 from more_itertools                 import chunked
 from scipy                          import optimize
 
-from VCS_components                 import VCS_condenser_Finned_Tube_3Zones, VCS_evaporator_Finned_Tube_2Zones
+from VCS_Codes.Components.VCS_components         import VCS_condenser_Finned_Tube_3Zones, Battery_Wavychannel_Evaporator_2Zones
+from ACHP_codes.Components.WavyChan import WavyChan_NMC
+from matplotlib import rcParams, rc, font_manager
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import os
 
 
 # ---------------------------------------------------------------------
 #   Imports
 # ---------------------------------------------------------------------
-class Cycle_Performance_Air:
+class Cycle_Performance_BatteryAir:
     """"Heat pump class:
         This Heat pump considers a 3 zone model for the condenser and the evaporator.
         It is suitable for air-air heat pumps.
@@ -54,7 +59,7 @@ class Cycle_Performance_Air:
             Capacity:           Btu/h, refrigeration capacity
             """
 
-    def __init__(self, SysParams, m_dot_coolant, T_coolant_inlet, m_dot_air, T_air_inlet, coolant, air, refrigerant):
+    def __init__(self, SysParams, dt, Q_bat, T_bat, m_dot_air, T_air_inlet, air, refrigerant):
         self.rpm                        = SysParams['Comp: rpm']
         self.eta_C_iso                  = SysParams['Comp: eta_C_iso']
         self.Displacement               = SysParams['Comp: Disp']
@@ -65,15 +70,14 @@ class Cycle_Performance_Air:
         self.subcooling                 = SysParams['Sys: Subcool']
 
         self.W_Fan_COND                 = SysParams['Cond: Fan']
-        self.W_Pump_EVAP                = SysParams['Evap: Pump']
 
-        self.m_dot_coolant              = m_dot_coolant
-        self.T_coolant_inlet            = T_coolant_inlet
+        self.T_bat                      = T_bat
+        self.Q_bat                      = Q_bat
+        self.dt                         = dt
         self.m_dot_air                  = m_dot_air
         self.T_air_inlet                = T_air_inlet
         self.m_dot_refrigerant          = None
         self.refrigerant                = refrigerant
-        self.heat_transfer_fluid_evap   = coolant
         self.heat_transfer_fluid_cond   = air   # condenser side; air
 
         self.dec                        = 10    # decimal for some PropsSI functions
@@ -100,7 +104,7 @@ class Cycle_Performance_Air:
             return (0, 0)
 
         else:
-            self.C_min_evap             = CoolProp.PropsSI('C', 'P', 101325, 'T', self.T_coolant_inlet, self.heat_transfer_fluid_evap) * self.m_dot_coolant
+            # self.C_min_evap             = CoolProp.PropsSI('C', 'P', 101325, 'T', self.T_coolant_inlet, self.refrigerant) * self.m_dot_coolant
             self.C_min_cond             = CoolProp.PropsSI('C', 'P', 101325, 'T', self.T_air_inlet, self.heat_transfer_fluid_cond) * self.m_dot_air
 
             # ---------------------------------------------------------
@@ -154,15 +158,14 @@ class Cycle_Performance_Air:
             self.T_air_outlet           = T_air_out
             self.x_3                    = x_outlet
             self.state_3                = [P_guess[1], self.T_3, self.h_3, self.x_3]
-            # ---------------------------------------------------------
+            # ---------------------------------------------------------------
             # Point 4
             self.h_4                    = self.h_3
             self.T_4                    = round(CoolProp.PropsSI('T', 'P', P_guess[0], 'H', self.h_4, self.refrigerant), self.dec)
             self.x_4                    = CoolProp.PropsSI('Q', 'P', P_guess[0], 'H', self.h_4, self.refrigerant)
 
             # Get outlet results of condenser through 2-zone model, assuming that the inlet refrigerant is in 2phase state
-            evaporator                   = VCS_evaporator_Finned_Tube_2Zones(self.refrigerant, self.heat_transfer_fluid_evap, self.T_coolant_inlet,
-                                          self.m_dot_refrigerant, self.m_dot_coolant, round(P_guess[0], 2), self.h_4, self.superheating, self.EV_HTC_coolant)
+            evaporator                   = Battery_Wavychannel_Evaporator_2Zones(self.refrigerant, self.dt, self.Q_bat, self.T_bat, self.m_dot_refrigerant, round(P_guess[0], 2), self.h_4, self.superheating)
             evaporator_results           = evaporator.thermodynamics_calculation()
             # ---------------------------------------------------------------
             Q_evap                      = evaporator_results.Q_evaporator
@@ -171,7 +174,6 @@ class Cycle_Performance_Air:
             h_outlet                    = evaporator_results.h_outlet
             x_inlet                     = evaporator_results.x_inlet
             x_outlet                    = evaporator_results.x_outlet
-            T_coolant_out               = evaporator_results.T_coolant_out
             UA_tot                      = evaporator_results.UA_tot
             effectiveness               = evaporator_results.effectiveness
             L_tot                       = evaporator_results.L_tot
@@ -180,8 +182,7 @@ class Cycle_Performance_Air:
             # ---------------------------------------------------------------
             h_1_cal                     = Q_evap / self.m_dot_refrigerant + self.h_4
             T_1_cal                     = T_1_cal
-
-            self.T_coolant_outlet       = T_coolant_out
+            self.T_bat_updated          = evaporator_results.T_bat_updated
             self.state_4                = [P_guess[0], self.T_4, self.h_4, self.x_4]
             # ---------------------------------------------------------
             # store parameters
@@ -195,7 +196,7 @@ class Cycle_Performance_Air:
     def Cycle_Solver(self):
         # ---------------------------------------------------------
         # Initial guess considering the saturation temperatures with superheating and subcooling
-        P_1_initial                     = int(CoolProp.PropsSI('P', 'Q', 1, 'T', self.T_coolant_inlet - self.subcooling, self.refrigerant))
+        P_1_initial                     = int(CoolProp.PropsSI('P', 'Q', 1, 'T', self.T_bat - self.subcooling, self.refrigerant))
         P_2_initial                     = int(CoolProp.PropsSI('P', 'Q', 1, 'T', self.T_air_inlet + self.superheating, self.refrigerant))
 
         P_guess                         = np.array([P_1_initial, P_2_initial])
@@ -211,7 +212,7 @@ class Cycle_Performance_Air:
         self.W_c                         = self.m_dot_refrigerant * (self.h_2 - self.h_1)
         self.R_c                         = self.P_2 / self.P_1
         # refrigerating COP
-        self.COP                         = self.Q_evaporator / ((self.W_c / self.eta_C_mec) + self.W_Fan_COND + self.W_Pump_EVAP)
+        self.COP                         = self.Q_evaporator / ((self.W_c / self.eta_C_mec) + self.W_Fan_COND)
 
         self.E_balance                   = self.Q_condenser + self.Q_evaporator + self.W_c
         # 1W = 3.41 Btu/h
@@ -261,6 +262,28 @@ class Cycle_Performance_Air:
 
 
 # ---------------------------------------------------------------------
+#   Functions
+# ---------------------------------------------------------------------
+def BatteryData(i=1):
+    address                         = os.getcwd()
+    with open(address + '\BatInputs_for_VCS.pkl', 'rb') as f:
+        BatInputs                   = pickle.load(f)
+
+    # print(BatInputs['Q_bat'])
+
+    WavyChan                        = WavyChan_NMC()
+    # results_chan                    = WavyChan_data()
+    T_air                           = BatInputs['T_amb'][i]+35
+    T_bat                           = BatInputs['T_b_air'][i]+35
+    Q_bat                           = BatInputs['Q_bat'][i] * 10
+    dt                              = BatInputs['time'][i]-BatInputs['time'][i-1]
+
+    print(Q_bat, 'W', T_bat, 'K', T_air, 'K')
+
+    return T_bat, T_air, Q_bat, dt
+
+
+# ---------------------------------------------------------------------
 #   Data storage
 # ---------------------------------------------------------------------
 class results_Data_VCS_condenser_Finned_Tube_3Zones:
@@ -306,6 +329,128 @@ class results_Data_VCS_evaporator_Finned_Tube_2Zones:
             pickle.dump(self, f)
 
 
+def save_file(self, filename):
+    with open(filename, 'wb') as f:
+        pickle.dump(self, f)
+
+
+def plot_BTMS_results(width=10, height=8):
+    # ---------------------------------------------------------------------
+    #   set the font style
+    # ---------------------------------------------------------------------
+    # Let's set the font to the one we want
+    font_path = ['/Users/Chunrong/PycharmProjects/Library/Fonts' ]
+    font_files = font_manager.findSystemFonts(fontpaths=font_path)
+
+    for font_file in font_files:
+        font_manager.fontManager.addfont(font_file)
+    mpl.rcParams['pdf.fonttype'] = 42
+    mpl.rcParams['ps.fonttype'] = 42
+    mpl.rcParams['font.family'] = 'Gulliver-Regular'
+    # ---------------------------------------------------------------------
+    #   todo flags need to be played with
+    # ---------------------------------------------------------------------
+    set_ticks = False
+    set_axis_limits = False
+    save_figure = False
+    # ---------------------------------------------------------------------
+    #   main plot settings
+    # ---------------------------------------------------------------------
+    line_width = 2.25
+    line_width_soft = 2
+    marker_size_exp = 7
+    marker_size_exp = str(marker_size_exp)
+    marker_size = 8
+    marker_size = str(marker_size)
+    fontsize = 14
+    fontsize_legend = 12
+    axes_linewidth = 1.75
+    alpha = 1.0
+    # journals usually want 600 dpi or more but that means large file sizes. I recommend at least 300
+    image_resolution = 300  # in dots per inch (dpi).
+
+    mpl.rc('axes', linewidth=axes_linewidth, labelsize=fontsize, titlesize=fontsize)
+    mpl.rc('xtick', labelsize=fontsize)
+    mpl.rc('ytick', labelsize=fontsize)
+    mpl.rc('legend', fontsize=fontsize_legend)
+    mpl.rc('savefig', dpi=image_resolution, format='png', bbox='tight')
+    # ---------------------------------------------------------------------
+    #   set the plot colors
+    # ---------------------------------------------------------------------
+    # defining the colors
+    myblack = [0, 0, 0]
+    myblue = '#0F95D7'
+    myred = '#e41a1c'
+    myyellow = [255 / 255, 194 / 255, 10 / 255]
+    mygreen = '#4daf4a'
+    mybrown = '#a65628'
+    mydarkblue = '#377eb8'
+    mypurple = '#984ea3'
+    myorange = '#ff7f00'
+    mygray = [89 / 255, 89 / 255, 89 / 255]
+
+    # setting up color and marker sequence
+    # note there are only 10 but you should not have more than 10 lines on a plot
+    colors = [myblack, myblue, myred, myyellow, mydarkblue, myorange, mybrown, mygreen, mypurple, mygray]
+    markers = ['o', '^', 's', 'p', 'v', '*', 'x']
+
+    # ---------------------------------------------------------------------
+    #   load results
+    # ---------------------------------------------------------------------
+    blob_size                           = 100 /1                 # for solutions in plot
+    x_label                             = 'Time (min)'
+    y1_label                            = '$T_{bat}$ ($^\circ$C)'
+    y2_label                            = '$T_{chan}$ ($^\circ$C)'
+    y3_label                            = 'COP (-)'
+    y4_label                            = 'Power (kW)'
+
+    address     = os.getcwd()
+    with open(address + '\BTMS_Case2_results.pkl', 'rb') as f:
+        BTMS_results = pickle.load(f)
+
+    # ---------------------------------------------------------------------
+    #   plot results
+    # ---------------------------------------------------------------------
+    fig1 = plt.figure(None)
+    fig1.set_size_inches(width, height)
+    fig1.suptitle(None)
+
+    plt.subplot(2, 2, 1)
+    plt.scatter(BTMS_results['mission_time'], BTMS_results['T_bat'], marker=markers[0], alpha=alpha, s=blob_size, c='none', edgecolors=colors[0], linewidths=line_width)
+    plt.grid(visible=True, which='major', linestyle='-', linewidth=0.75, color=colors[0])
+    plt.minorticks_on()
+    plt.grid(visible=True, which='minor', linestyle='--', linewidth=0.15, color=colors[0])
+    plt.ylabel(y1_label)
+
+    plt.subplot(2, 2, 2)
+    plt.scatter(BTMS_results['mission_time'], BTMS_results['T_o'] - 273.15, marker=markers[1], alpha=alpha, s=blob_size, c='none', edgecolors=colors[1], linewidths=line_width, label='$T_{o}$')
+    plt.scatter(BTMS_results['mission_time'], BTMS_results['T_i'] - 273.15, marker=markers[2], alpha=alpha, s=blob_size, c='none', edgecolors=colors[2], linewidths=line_width, label='$T_{i}$')
+    plt.grid(visible=True, which='major', linestyle='-', linewidth=0.75, color=colors[0])
+    plt.minorticks_on()
+    plt.grid(visible=True, which='minor', linestyle='--', linewidth=0.15, color=colors[0])
+    plt.ylabel(y2_label)
+
+    plt.subplot(2, 2, 3)
+    plt.scatter(BTMS_results['mission_time'], BTMS_results['COP'], marker=markers[3], alpha=alpha, s=blob_size, c='none', edgecolors=colors[7], linewidths=line_width)
+    plt.grid(visible=True, which='major', linestyle='-', linewidth=0.75, color=colors[0])
+    plt.minorticks_on()
+    plt.grid(visible=True, which='minor', linestyle='--', linewidth=0.15, color=colors[0])
+    plt.xlabel(x_label)
+    plt.ylabel(y3_label)
+
+    plt.subplot(2, 2, 4)
+    plt.scatter(BTMS_results['mission_time'], BTMS_results['Power'], marker=markers[3], alpha=alpha, s=blob_size, c='none', edgecolors=colors[8], linewidths=line_width)
+    plt.grid(visible=True, which='major', linestyle='-', linewidth=0.75, color=colors[0])
+    plt.minorticks_on()
+    plt.grid(visible=True, which='minor', linestyle='--', linewidth=0.15, color=colors[0])
+    plt.xlabel(x_label)
+    plt.ylabel(y4_label)
+
+    plt.tight_layout()
+    plt.show()
+    # plt.savefig('fig10.png', dpi=image_resolution, format='png')
+
+
 # ---------------------------------------------------------------------
 #   Main
 # ---------------------------------------------------------------------
@@ -313,18 +458,20 @@ class results_Data_VCS_evaporator_Finned_Tube_2Zones:
 if __name__ == '__main__':
     # Parameters of a generic HP to be used in the VC model
     # ------------------------------------------------------------------------------
-    Comp        = {'Comp: rpm': 3.6e3,      'Comp: eta_C_iso': 0.63,    'Comp: Disp': 4.25e-5, 'Comp: eta_C_vol': 0.95, 'Comp: eta_C_mec': 0.88}
-    Evap        = {'Evap: TubeL': 10,       'Evap: TubeN': 5,           "Evap: TubeID": 0.011, 'Evap: FinEff': 0.75,    'Evap: FinRatio': 7.2, 'Evap: Pump': 220}
+    Comp        = {'Comp: rpm': 3.6e3*2,      'Comp: eta_C_iso': 0.63,    'Comp: Disp': 4.25e-5, 'Comp: eta_C_vol': 0.95, 'Comp: eta_C_mec': 0.88}
+    # Evap        = {'Evap: TubeL': 10,       'Evap: TubeN': 5,           "Evap: TubeID": 0.011, 'Evap: FinEff': 0.75,    'Evap: FinRatio': 7.2, 'Evap: Pump': 220}
     Cond        = {'Cond: TubeL': 10,       'Cond: TubeN': 5,           "Cond: TubeID": 0.011, 'Cond: FinEff': 0.75,    'Cond: FinRatio': 7.2, 'Cond: Fan': 365}
     System      = {'Sys: Superheat': 8.5,   'Sys: Subcool': 6.5}
-    SysParams   = dict(Comp, **Evap, **Cond, **System)   # add the dicts together
+    SysParams   = dict(Comp, **Cond, **System)   # add the dicts together
 
-    m_dot_coolant                   = 0.1
-    m_dot_air                       = 0.47
-    T_coolant_inlet                 = 273 + 30
-    T_air_inlet                     = 273 + 50
+    m_dot_air                       = 0.47 * 1
+    # battery pack layout
+    N_series                        = 150
+    N_parallel                      = 130
 
-    HP        = Cycle_Performance_Air(SysParams, m_dot_coolant, T_coolant_inlet, m_dot_air, T_air_inlet, 'water', 'air', 'R134a')
+    T_bat, T_air, Q_bat, dt         = BatteryData()
+
+    HP        = Cycle_Performance_BatteryAir(SysParams, dt, Q_bat, T_bat, m_dot_air, T_air, 'air', 'R134a')
     HP.Cycle_Solver()
     HP.PostProcessing()
     # HP.Interpolation_Singularity_Points()
@@ -333,5 +480,6 @@ if __name__ == '__main__':
     print('Q_cond:      {:.2f} [W]'.format(HP.Q_condenser))
     print('Q_evap:      {:.2f} [W]'.format(HP.Q_evaporator))
     print('W_comp:      {:.2f} [W]'.format(HP.W_c))
-    print('T_coolant_outlet: {:.2f} [K]'.format(HP.T_coolant_outlet))
+    print('T_bat_updated: {:.2f} [K]'.format(HP.T_bat_updated))
     print('Energy Balance: {:.2f} [-]'.format(HP.E_balance))
+

@@ -158,13 +158,14 @@ class LatentHeatThermalEnergyStorage:
 
         return A_LHTES, P_LHTES, m_LHTES, r_melt_front, T_o_coolant, Q_conv, eff_LHTES_check, Q_conv_check
 
-    def SimplifiedLHTES(self, m_dot_coolant=None, Q_wavychannel=None, T_i_coolant=None, dt=None, Heat_accumulated=None, Q_evap_design=1e4):
+    def SimplifiedLHTES(self, m_dot_coolant=None, Q_wavychannel=None, T_i_coolant=None, dt=None, Q_evap_design=1e4):
         T_o_coolant         = T_i_coolant + (Q_evap_design - Q_wavychannel) / (m_dot_coolant * self._coolant_cp)
-        Heat_accumulated    = Heat_accumulated + (Q_wavychannel - Q_evap_design) * dt
+        Q_LHTES             = Q_evap_design - Q_wavychannel # heat flow out, +; heat flow in, -
+        Heat_accumulated    = (Q_wavychannel - Q_evap_design) * dt
         self.LHTES_composite_properties()
         m_LHTES             = Heat_accumulated / self.h_sf_eff
 
-        return T_o_coolant, Heat_accumulated, m_LHTES
+        return T_o_coolant, Heat_accumulated, m_LHTES, Q_LHTES
 
 
 if __name__ == '__main__':

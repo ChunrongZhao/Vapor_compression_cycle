@@ -2776,6 +2776,17 @@ class BTMS_SecondaryCycleClass():
             self.WavyChannel.Calculate()
 
             # -----------------------------------------------------------------------------
+            # # TODO: add LatentThermalStorage
+            # params  = {
+            #     'm_dot_g':                  self.Pump.m_dot_g,
+            #     'T_in_g':                   self.LineSetSupply.T_out,
+            #     'p_in_g':                   self.WavyChannel.p_in_g,
+            #     'AS_g':                     AS_SLF
+            # }
+            # self.WavyChannel.Update(**params)
+            # self.WavyChannel.Calculate()
+
+            # -----------------------------------------------------------------------------
             # Inlet enthalpy to LineSetReturn
             AS_SLF.update(CP.PT_INPUTS, self.Pump.p_in_g, self.WavyChannel.T_out_g)
             h_in_LineSetReturn              = AS_SLF.hmass()            # [J/kg]

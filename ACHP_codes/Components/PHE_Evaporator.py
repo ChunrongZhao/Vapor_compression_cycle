@@ -1485,6 +1485,7 @@ def SamplePHEHX():
     TT                                          = []
     QQ                                          = []
     Q1                                          = []
+    m_dot_hh                                          = []
     T_in                                        = 8 + 273.15
     #    for Tin in np.linspace(275,287,101):##
     for m_dot_h in [0.4176, 0.5013, 0.6267, 0.8357, 1.254, 2.508]:
@@ -1523,6 +1524,7 @@ def SamplePHEHX():
 
         PHE                                     = PHEHXClass(**params)
         PHE.Calculate()
+        m_dot_hh.append(m_dot_h)
         TT.append(T_in)
         QQ.append(PHE.h_2phase_c)               # PHE.Q/PHE.Q_max)
         Q1.append(PHE.q_flux)                   # w_2phase_c) # PHE.Q/PHE.Q_max)
@@ -1532,7 +1534,8 @@ def SamplePHEHX():
     print(TT)
     print(QQ)
     print(Q1)
-    pylab.plot(TT,QQ)
+    print(m_dot_hh)
+    pylab.plot(m_dot_hh,QQ)
     pylab.show()
 
 
@@ -1590,6 +1593,6 @@ def WyattPHEHX_test():
 
 # ---------------------------------------------------------------
 if __name__ == '__main__':
-    # SamplePHEHX()
-    WyattPHEHX_test()
+    SamplePHEHX()
+    # WyattPHEHX_test()
     # SWEPVariedmdot()

@@ -16,7 +16,7 @@ from pathlib                        import Path
 from more_itertools                 import chunked
 from scipy                          import optimize
 
-from VCS_components                 import VCS_condenser_Finned_Tube_3Zones, VCS_evaporator_Finned_Tube_2Zones
+from VCS_Codes.Components.VCS_components         import VCS_condenser_Finned_Tube_3Zones, VCS_evaporator_Finned_Tube_2Zones
 
 
 # ---------------------------------------------------------------------
