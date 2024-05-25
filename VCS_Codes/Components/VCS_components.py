@@ -1020,7 +1020,7 @@ class Battery_Wavychannel_Evaporator_2Zones:
 
         # calculate updated battery temperature
         C_bat                       = self.mass * self.specific_heat_capacity * 150 * 130
-        self.T_bat_updated              = self.T_bat + (self.Q_bat - self.Q_evaporator) * self.dt / C_bat
+        self.T_bat_updated              = self.T_bat + (self.Q_bat - self.Q_evaporator) * self.dt * 60 / C_bat
         # condenser overall conductance and effectiveness
         self.UA_tot                     = self.L_2 / L_tube * U_2 + self.L_1 / L_tube * U_1
         # self.effectiveness              = self.Q_evaporator / (C_coolant * (self.T_coolant_inlet - self.T_inlet))

@@ -112,12 +112,12 @@ class Cycle_Performance_BatteryAir:
             # ---------------------------------------------------------
             self.T_1                    = round(CoolProp.PropsSI('T', 'P', P_guess[0], 'Q', 1, self.refrigerant) + self.superheating, self.dec)
             self.h_1                    = CoolProp.PropsSI('H', 'P', P_guess[0], 'T', self.T_1, self.refrigerant)
-            self.x_1                    = CoolProp.PropsSI('Q', 'P', P_guess[0], 'T', self.T_1, self.refrigerant)  # Q is the Quality
+            self.x_1                    = abs(CoolProp.PropsSI('Q', 'P', P_guess[0], 'T', self.T_1, self.refrigerant))  # Q is the Quality
             self.s_1                    = CoolProp.PropsSI('S', 'P', P_guess[0], 'T', self.T_1, self.refrigerant)
             rho_1                       = CoolProp.PropsSI('D', 'P', P_guess[0], 'T', self.T_1, self.refrigerant)
 
             self.m_dot_refrigerant      = rho_1 * self.Displacement * (self.rpm / 60) * self.eta_C_vol
-            self.state_1                = [P_guess[0], self.T_1, self.h_1, self.x_1]
+            self.state_1                = [P_guess[0], self.h_1, self.T_1, self.s_1, self.x_1]
 
             # ---------------------------------------------------------
             # Point 2
@@ -126,14 +126,14 @@ class Cycle_Performance_BatteryAir:
             self.h_2s                   = CoolProp.PropsSI('H', 'P', P_guess[1], 'S', self.s_2, self.refrigerant)
             self.h_2                    = (self.h_2s - self.h_1) / self.eta_C_iso + self.h_1
             self.T_2                    = round(CoolProp.PropsSI('T', 'P', P_guess[1], 'H', self.h_2, self.refrigerant), self.dec)
-            self.x_2                    = CoolProp.PropsSI('Q', 'P', P_guess[1], 'T', self.T_2, self.refrigerant)
-            self.state_2                = [P_guess[1], self.T_2, self.h_2, self.x_2]
+            self.x_2                    = abs(CoolProp.PropsSI('Q', 'P', P_guess[1], 'T', self.T_2, self.refrigerant))
+            self.state_2                = [P_guess[1], self.h_2, self.T_2, self.s_2, self.x_2]
             # ---------------------------------------------------------
             # Point 3
             # ---------------------------------------------------------
             self.T_3                    = round(CoolProp.PropsSI('T', 'P', P_guess[1], 'Q', 0, self.refrigerant) - self.subcooling, self.dec)  # 8.4
             self.h_3                    = CoolProp.PropsSI('H', 'P', P_guess[1], 'T', self.T_3, self.refrigerant)
-
+            self.s_3                    = CoolProp.PropsSI('S', 'P', P_guess[1], 'T', self.T_3, self.refrigerant)
             # Get outlet results of condenser through 3-zone model
             condenser                   = VCS_condenser_Finned_Tube_3Zones(self.refrigerant, self.heat_transfer_fluid_cond, self.T_air_inlet,
                                           self.m_dot_refrigerant, self.m_dot_air, P_guess[1], self.T_2, self.subcooling, self.CD_HTC_air)
@@ -147,23 +147,22 @@ class Cycle_Performance_BatteryAir:
             T_air_out                   = condenser_results.T_air_out
             UA_tot                      = condenser_results.UA_tot
             effectiveness               = condenser_results.effectiveness
-            L_tot                       = condenser_results.L_tot
-            L_1                         = condenser_results.L_1
-            L_2                         = condenser_results.L_2
-            L_3                         = condenser_results.L_3
+            self.cond_L_tot                       = condenser_results.L_tot
+            self.cond_L_1                         = condenser_results.L_1
+            self.cond_L_2                         = condenser_results.L_2
+            self.cond_L_3                         = condenser_results.L_3
             # ---------------------------------------------------------------
             h_3_cal                     = Q_cond / self.m_dot_refrigerant + self.h_2
             T_3_cal                     = T_3_cal
 
             self.T_air_outlet           = T_air_out
             self.x_3                    = x_outlet
-            self.state_3                = [P_guess[1], self.T_3, self.h_3, self.x_3]
+            self.state_3                = [P_guess[1], self.h_3, self.T_3, self.s_3, self.x_3]
             # ---------------------------------------------------------------
             # Point 4
             self.h_4                    = self.h_3
             self.T_4                    = round(CoolProp.PropsSI('T', 'P', P_guess[0], 'H', self.h_4, self.refrigerant), self.dec)
             self.x_4                    = CoolProp.PropsSI('Q', 'P', P_guess[0], 'H', self.h_4, self.refrigerant)
-
             # Get outlet results of condenser through 2-zone model, assuming that the inlet refrigerant is in 2phase state
             evaporator                   = Battery_Wavychannel_Evaporator_2Zones(self.refrigerant, self.dt, self.Q_bat, self.T_bat, self.m_dot_refrigerant, round(P_guess[0], 2), self.h_4, self.superheating)
             evaporator_results           = evaporator.thermodynamics_calculation()
@@ -176,14 +175,15 @@ class Cycle_Performance_BatteryAir:
             x_outlet                    = evaporator_results.x_outlet
             UA_tot                      = evaporator_results.UA_tot
             effectiveness               = evaporator_results.effectiveness
-            L_tot                       = evaporator_results.L_tot
-            L_1                         = evaporator_results.L_1
-            L_2                         = evaporator_results.L_2
+            self.evap_L_tot                       = evaporator_results.L_tot
+            self.evap_L_1                         = evaporator_results.L_1
+            self.evap_L_2                         = evaporator_results.L_2
             # ---------------------------------------------------------------
             h_1_cal                     = Q_evap / self.m_dot_refrigerant + self.h_4
             T_1_cal                     = T_1_cal
             self.T_bat_updated          = evaporator_results.T_bat_updated
-            self.state_4                = [P_guess[0], self.T_4, self.h_4, self.x_4]
+            self.s_4                    = CoolProp.PropsSI('S', 'P', P_guess[0], 'Q', abs(self.x_4), self.refrigerant)
+            self.state_4                = [P_guess[0], self.h_4, self.T_4, self.s_4, self.x_4]
             # ---------------------------------------------------------
             # store parameters
             self.Q_evaporator           = Q_evap
@@ -218,6 +218,14 @@ class Cycle_Performance_BatteryAir:
         # 1W = 3.41 Btu/h
         self.Capacity                    = - self.Q_evaporator * 3.41
 
+        print('Phase: ', CoolProp.PhaseSI('P', self.P_1, 'Q', self.x_4, self.refrigerant))
+        self.s_4                            = CoolProp.PropsSI('S', 'P', self.P_1, 'Q', self.x_4, self.refrigerant)
+
+        self.s_4_liq                        = CoolProp.PropsSI('S', 'P', self.P_1, 'Q', 0, self.refrigerant)
+        self.s_4_vap                        = CoolProp.PropsSI('S', 'P', self.P_1, 'Q', 1, self.refrigerant)
+        print(self.x_4)
+        print(self.s_4_vap, self.s_4_liq, (self.s_4_vap * self.x_4 + self.s_4_liq * (1 - self.x_4)))
+
         return {'W_c': self.W_c, 'R_c': self.R_c, 'COP': self.COP, 'E_balance': self.E_balance, 'Capacity': self.Capacity}
 
     def Interpolation_Singularity_Points(self):
@@ -233,7 +241,7 @@ class Cycle_Performance_BatteryAir:
         else:
             dif                         = 1  # value away from the singularity to perform the interpolation
             # ---------------------Simulation with T_amb - 1 K--------------------------------
-            P_1_initial                 = int(CoolProp.PropsSI('P', 'Q', 1, 'T', self.T_coolant_inlet - self.subcooling, self.refrigerant))
+            P_1_initial                 = int(CoolProp.PropsSI('P', 'Q', 1, 'T', self.T_bat - self.subcooling, self.refrigerant))
             P_2_initial                 = int(CoolProp.PropsSI('P', 'Q', 1, 'T', self.T_air_inlet - dif + self.superheating, self.refrigerant))
 
             P_guess                     = np.array([P_1_initial, P_2_initial])
@@ -244,7 +252,7 @@ class Cycle_Performance_BatteryAir:
             res2                        = self.PostProcessing()
 
             # --------------------Simulation with T_amb + 1 K-------------------------------------
-            P_1_initial                 = int(CoolProp.PropsSI('P', 'Q', 1, 'T', self.T_coolant_inlet - self.subcooling, self.refrigerant))
+            P_1_initial                 = int(CoolProp.PropsSI('P', 'Q', 1, 'T', self.T_bat - self.subcooling, self.refrigerant))
             P_2_initial                 = int(CoolProp.PropsSI('P', 'Q', 1, 'T', self.T_air_inlet + dif + self.superheating, self.refrigerant))
 
             P_guess                     = np.array([P_1_initial, P_2_initial])
@@ -264,7 +272,7 @@ class Cycle_Performance_BatteryAir:
 # ---------------------------------------------------------------------
 #   Functions
 # ---------------------------------------------------------------------
-def BatteryData(i=1):
+def BatteryData(i=80, DT_amb=35):
     address                         = os.getcwd()
     with open(address + '\BatInputs_for_VCS.pkl', 'rb') as f:
         BatInputs                   = pickle.load(f)
@@ -273,14 +281,14 @@ def BatteryData(i=1):
 
     WavyChan                        = WavyChan_NMC()
     # results_chan                    = WavyChan_data()
-    T_air                           = BatInputs['T_amb'][i]+35
-    T_bat                           = BatInputs['T_b_air'][i]+35
+    T_air                           = BatInputs['T_amb'][i] + DT_amb
+    # T_bat                           = BatInputs['T_b_air'][i] + DT_amb
     Q_bat                           = BatInputs['Q_bat'][i] * 10
-    dt                              = BatInputs['time'][i]-BatInputs['time'][i-1]
+    dt                              = BatInputs['time'][i] - BatInputs['time'][i-1]
 
-    print(Q_bat, 'W', T_bat, 'K', T_air, 'K')
+    # print(Q_bat, 'W', T_bat, 'K', T_air, 'K')
 
-    return T_bat, T_air, Q_bat, dt
+    return T_air, Q_bat, dt
 
 
 # ---------------------------------------------------------------------
@@ -334,7 +342,7 @@ def save_file(self, filename):
         pickle.dump(self, f)
 
 
-def plot_BTMS_results(width=10, height=8):
+def plot_BTMS_results(BTMS_results, width=10, height=9):
     # ---------------------------------------------------------------------
     #   set the font style
     # ---------------------------------------------------------------------
@@ -400,14 +408,11 @@ def plot_BTMS_results(width=10, height=8):
     blob_size                           = 100 /1                 # for solutions in plot
     x_label                             = 'Time (min)'
     y1_label                            = '$T_{bat}$ ($^\circ$C)'
-    y2_label                            = '$T_{chan}$ ($^\circ$C)'
+    y2_label                            = '$L_{2ph,evap} / L_{tot}$ (%)'
     y3_label                            = 'COP (-)'
-    y4_label                            = 'Power (kW)'
-
-    address     = os.getcwd()
-    with open(address + '\BTMS_Case2_results.pkl', 'rb') as f:
-        BTMS_results = pickle.load(f)
-
+    y4_label                            = '$W_{comp}$ (kW)'
+    y5_label                            = '$Q_{bat}$ (kW)'
+    y6_label                            = '$Q_{conv}$ (kW)'
     # ---------------------------------------------------------------------
     #   plot results
     # ---------------------------------------------------------------------
@@ -415,36 +420,53 @@ def plot_BTMS_results(width=10, height=8):
     fig1.set_size_inches(width, height)
     fig1.suptitle(None)
 
-    plt.subplot(2, 2, 1)
-    plt.scatter(BTMS_results['mission_time'], BTMS_results['T_bat'], marker=markers[0], alpha=alpha, s=blob_size, c='none', edgecolors=colors[0], linewidths=line_width)
+    plt.subplot(3, 2, 1)
+    plt.scatter(BTMS_results['mission_time'][:-10], BTMS_results['T_bat_liq'][:-10], marker=markers[0], alpha=alpha, s=blob_size, c='none', edgecolors=colors[0], linewidths=line_width, label='$T_{bat,vcs}$')
+    plt.scatter(BTMS_results['mission_time'][:-10], BTMS_results['T_bat_air'][:-10], marker=markers[0], alpha=alpha, s=blob_size, c='none', edgecolors=colors[1], linewidths=line_width, label='$T_{bat,air}$')
     plt.grid(visible=True, which='major', linestyle='-', linewidth=0.75, color=colors[0])
     plt.minorticks_on()
     plt.grid(visible=True, which='minor', linestyle='--', linewidth=0.15, color=colors[0])
     plt.ylabel(y1_label)
+    plt.legend()
 
-    plt.subplot(2, 2, 2)
-    plt.scatter(BTMS_results['mission_time'], BTMS_results['T_o'] - 273.15, marker=markers[1], alpha=alpha, s=blob_size, c='none', edgecolors=colors[1], linewidths=line_width, label='$T_{o}$')
-    plt.scatter(BTMS_results['mission_time'], BTMS_results['T_i'] - 273.15, marker=markers[2], alpha=alpha, s=blob_size, c='none', edgecolors=colors[2], linewidths=line_width, label='$T_{i}$')
+    plt.subplot(3, 2, 2)
+    plt.scatter(BTMS_results['mission_time'][:-10], BTMS_results['L_2ph'][:-10], marker=markers[1], alpha=alpha, s=blob_size, c='none', edgecolors=colors[2], linewidths=line_width)
     plt.grid(visible=True, which='major', linestyle='-', linewidth=0.75, color=colors[0])
     plt.minorticks_on()
     plt.grid(visible=True, which='minor', linestyle='--', linewidth=0.15, color=colors[0])
     plt.ylabel(y2_label)
 
-    plt.subplot(2, 2, 3)
-    plt.scatter(BTMS_results['mission_time'], BTMS_results['COP'], marker=markers[3], alpha=alpha, s=blob_size, c='none', edgecolors=colors[7], linewidths=line_width)
+    plt.subplot(3, 2, 3)
+    plt.scatter(BTMS_results['mission_time'][:-10], BTMS_results['COP'][:-10], marker=markers[3], alpha=alpha, s=blob_size, c='none', edgecolors=colors[7], linewidths=line_width)
     plt.grid(visible=True, which='major', linestyle='-', linewidth=0.75, color=colors[0])
     plt.minorticks_on()
     plt.grid(visible=True, which='minor', linestyle='--', linewidth=0.15, color=colors[0])
     plt.xlabel(x_label)
     plt.ylabel(y3_label)
 
-    plt.subplot(2, 2, 4)
-    plt.scatter(BTMS_results['mission_time'], BTMS_results['Power'], marker=markers[3], alpha=alpha, s=blob_size, c='none', edgecolors=colors[8], linewidths=line_width)
+    plt.subplot(3, 2, 4)
+    plt.scatter(BTMS_results['mission_time'][:-10], BTMS_results['Power'][:-10], marker=markers[3], alpha=alpha, s=blob_size, c='none', edgecolors=colors[8], linewidths=line_width)
     plt.grid(visible=True, which='major', linestyle='-', linewidth=0.75, color=colors[0])
     plt.minorticks_on()
     plt.grid(visible=True, which='minor', linestyle='--', linewidth=0.15, color=colors[0])
     plt.xlabel(x_label)
     plt.ylabel(y4_label)
+
+    plt.subplot(3, 2, 5)
+    plt.scatter(BTMS_results['mission_time'][:-10], BTMS_results['Q_bat'][:-10], marker=markers[3], alpha=alpha, s=blob_size, c='none', edgecolors=colors[4], linewidths=line_width)
+    plt.grid(visible=True, which='major', linestyle='-', linewidth=0.75, color=colors[0])
+    plt.minorticks_on()
+    plt.grid(visible=True, which='minor', linestyle='--', linewidth=0.15, color=colors[0])
+    plt.xlabel(x_label)
+    plt.ylabel(y5_label)
+
+    plt.subplot(3, 2, 6)
+    plt.scatter(BTMS_results['mission_time'][:-10], BTMS_results['Q_conv'][:-10], marker=markers[3], alpha=alpha, s=blob_size, c='none', edgecolors=colors[5], linewidths=line_width)
+    plt.grid(visible=True, which='major', linestyle='-', linewidth=0.75, color=colors[0])
+    plt.minorticks_on()
+    plt.grid(visible=True, which='minor', linestyle='--', linewidth=0.15, color=colors[0])
+    plt.xlabel(x_label)
+    plt.ylabel(y6_label)
 
     plt.tight_layout()
     plt.show()
@@ -458,28 +480,78 @@ def plot_BTMS_results(width=10, height=8):
 if __name__ == '__main__':
     # Parameters of a generic HP to be used in the VC model
     # ------------------------------------------------------------------------------
-    Comp        = {'Comp: rpm': 3.6e3*2,      'Comp: eta_C_iso': 0.63,    'Comp: Disp': 4.25e-5, 'Comp: eta_C_vol': 0.95, 'Comp: eta_C_mec': 0.88}
+    Comp        = {'Comp: rpm': 3.6e3*1,      'Comp: eta_C_iso': 0.63,    'Comp: Disp': 4.25e-5, 'Comp: eta_C_vol': 0.95, 'Comp: eta_C_mec': 0.88}
     # Evap        = {'Evap: TubeL': 10,       'Evap: TubeN': 5,           "Evap: TubeID": 0.011, 'Evap: FinEff': 0.75,    'Evap: FinRatio': 7.2, 'Evap: Pump': 220}
     Cond        = {'Cond: TubeL': 10,       'Cond: TubeN': 5,           "Cond: TubeID": 0.011, 'Cond: FinEff': 0.75,    'Cond: FinRatio': 7.2, 'Cond: Fan': 365}
     System      = {'Sys: Superheat': 8.5,   'Sys: Subcool': 6.5}
     SysParams   = dict(Comp, **Cond, **System)   # add the dicts together
 
     m_dot_air                       = 0.47 * 1
-    # battery pack layout
-    N_series                        = 150
-    N_parallel                      = 130
+    # -----------------------------------------------------
+    address                         = os.getcwd()
+    with open(address + '\BatInputs_for_VCS.pkl', 'rb') as f:
+        BatInputs                   = pickle.load(f)
+    DT_amb                          = 35
+    T_bat                           = BatInputs['T_b_air'][0] + DT_amb
 
-    T_bat, T_air, Q_bat, dt         = BatteryData()
+    VCS_results = {'mission_time': [], 'T_bat_liq': [], 'T_bat_air': [], 'COP': [], 'Power': [], 'L_2ph': [], 'Q_bat': [], 'Q_conv': []}
+    # ------------------------------------------------------
+    for i in range(1, len(BatInputs['T_amb'])):
+        T_air, Q_bat, dt            = BatteryData(i=i, DT_amb=DT_amb)
+        T_bat_air                   = BatInputs['T_b_air'][i] + DT_amb
+        HP        = Cycle_Performance_BatteryAir(SysParams, dt, Q_bat, T_bat, m_dot_air, T_air, 'air', 'R134a')
+        HP.Cycle_Solver()
+        HP.PostProcessing()
+        # HP.Interpolation_Singularity_Points()
+        # show the results
+        print('********************i = {:.2f}**********************'.format(i))
+        print('COP:                 {:.2f} [-]'.format(HP.COP))
+        print('Q_cond:              {:.2f} [W]'.format(HP.Q_condenser))
+        print('Q_evap:              {:.2f} [W]'.format(HP.Q_evaporator))
+        print('W_comp:              {:.2f} [W]'.format(HP.W_c))
+        print('T_bat_updated:       {:.2f} [K]'.format(HP.T_bat_updated))
+        print('Energy Balance:      {:.2f} [-]'.format(HP.E_balance))
 
-    HP        = Cycle_Performance_BatteryAir(SysParams, dt, Q_bat, T_bat, m_dot_air, T_air, 'air', 'R134a')
-    HP.Cycle_Solver()
-    HP.PostProcessing()
-    # HP.Interpolation_Singularity_Points()
-    # show the results
-    print('COP:         {:.2f}'.format(HP.COP))
-    print('Q_cond:      {:.2f} [W]'.format(HP.Q_condenser))
-    print('Q_evap:      {:.2f} [W]'.format(HP.Q_evaporator))
-    print('W_comp:      {:.2f} [W]'.format(HP.W_c))
-    print('T_bat_updated: {:.2f} [K]'.format(HP.T_bat_updated))
-    print('Energy Balance: {:.2f} [-]'.format(HP.E_balance))
+        print('-----------------------------------------------------------------------------------')
+        print('         pressure [Pa],   enthalpy [J/kg],    temperature [K],    entropy [J/K],  mixture[-]')
+        print('Point-1: {:.2f}       {:.2f}           {:.2f}              {:.2f}         {:.2f}'.format(HP.state_1[0], HP.state_1[1], HP.state_1[2], HP.state_1[3], HP.state_1[4]))
+        print('Point-2: {:.2f}       {:.2f}           {:.2f}              {:.2f}         {:.2f}'.format(HP.state_2[0], HP.state_2[1], HP.state_2[2], HP.state_2[3], HP.state_2[4]))
+        print('Point-3: {:.2f}       {:.2f}           {:.2f}              {:.2f}         {:.2f}'.format(HP.state_3[0], HP.state_3[1], HP.state_3[2], HP.state_3[3], HP.state_3[4]))
+        print('Point-4: {:.2f}       {:.2f}           {:.2f}              {:.2f}         {:.2f}'.format(HP.state_4[0], HP.state_4[1], HP.state_4[2], HP.state_4[3], HP.state_4[4]))
 
+        T_bat   = HP.T_bat_updated
+        VCS_results['T_bat_liq'].append(T_bat - 273.15)
+        VCS_results['T_bat_air'].append(T_bat_air - 273.15)
+        VCS_results['L_2ph'].append(HP.evap_L_1 / HP.evap_L_tot * 100)
+        time    = BatInputs['time'][i]
+        VCS_results['mission_time'].append(time)
+        VCS_results['COP'].append(HP.COP)
+        VCS_results['Power'].append(HP.W_c/1e3)
+        VCS_results['Q_bat'].append(HP.Q_bat/1e3)
+        VCS_results['Q_conv'].append(HP.Q_evaporator/1e3)
+
+    plot_BTMS_results(VCS_results)
+
+
+    # # ----------------------------------------------------------
+    # T_bat, T_air, Q_bat, dt         = BatteryData(i=97)
+    #
+    # HP        = Cycle_Performance_BatteryAir(SysParams, dt, Q_bat, T_bat, m_dot_air, T_air, 'air', 'R134a')
+    # HP.Cycle_Solver()
+    # HP.PostProcessing()
+    # # HP.Interpolation_Singularity_Points()
+    # # show the results
+    # print('i = :{:.2f}'.format(97))
+    # print('COP:         {:.2f}'.format(HP.COP))
+    # print('Q_cond:      {:.2f} [W]'.format(HP.Q_condenser))
+    # print('Q_evap:      {:.2f} [W]'.format(HP.Q_evaporator))
+    # print('W_comp:      {:.2f} [W]'.format(HP.W_c))
+    # print('T_bat_updated: {:.2f} [K]'.format(HP.T_bat_updated))
+    # print('Energy Balance: {:.2f} [-]'.format(HP.E_balance))
+    #
+    # print('-----------------------------------------------------------------------------------')
+    # print('         pressure [Pa],   enthalpy [J/kg],    temperature [K],    entropy [J/K],  mixture[-]')
+    # print('Point-1: {:.2f}       {:.2f}           {:.2f}              {:.2f}         {:.2f}'.format(HP.state_1[0], HP.state_1[1], HP.state_1[2], HP.state_1[3], HP.state_1[4]))
+    # print('Point-2: {:.2f}       {:.2f}           {:.2f}              {:.2f}         {:.2f}'.format(HP.state_2[0], HP.state_2[1], HP.state_2[2], HP.state_2[3], HP.state_2[4]))
+    # print('Point-3: {:.2f}       {:.2f}           {:.2f}              {:.2f}         {:.2f}'.format(HP.state_3[0], HP.state_3[1], HP.state_3[2], HP.state_3[3], HP.state_3[4]))
+    # print('Point-4: {:.2f}       {:.2f}           {:.2f}              {:.2f}         {:.2f}'.format(HP.state_4[0], HP.state_4[1], HP.state_4[2], HP.state_4[3], HP.state_4[4]))
