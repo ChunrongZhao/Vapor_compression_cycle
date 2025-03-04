@@ -447,15 +447,15 @@ def f_h_1phase_Annulus(m_dot, OD, ID, T, p, AS, Phase='Single'):
     return (f, h, Re)
 
 
-def f_h_1phase_Channel(mdot,W,H,T,p,AS,Phase):
+def f_h_1phase_Channel(mdot, W, H, T, p, AS, Phase):
 
-    if Phase=="SatVap":
+    if Phase == "SatVap":
         AS.update(CP.QT_INPUTS,1.0,T)
         mu = AS.viscosity() #[Pa-s OR kg/m-s]
         cp = AS.cpmass() #[J/kg-K]
         k = AS.conductivity() #[W/m-K]
         rho = AS.rhomass() #[kg/m^3]
-    elif Phase =="SatLiq":
+    elif Phase == "SatLiq":
         AS.update(CP.QT_INPUTS,0.0,T)
         mu = AS.viscosity() #[Pa-s OR kg/m-s]
         cp = AS.cpmass() #[J/kg-K]
@@ -468,12 +468,12 @@ def f_h_1phase_Channel(mdot,W,H,T,p,AS,Phase):
         k = AS.conductivity() #[W/m-K]
         rho = AS.rhomass() #[kg/m^3]
 
-    Pr = cp * mu / k #[-]
+    Pr      = cp * mu / k #[-]
 
-    Dh = 2*H*W/(H+W)
-    Area=W*H
-    u=mdot/(Area*rho)
-    Re=rho*u*(Dh)/mu
+    Dh      = 2 * H * W / (H + W)
+    Area    = W * H
+    u       = mdot / (Area * rho)
+    Re      = rho * u * (Dh) / mu
 
     # Friction factor of Churchill (Darcy Friction factor where f_laminar=64/Re)
     e_D = 0
@@ -482,11 +482,13 @@ def f_h_1phase_Channel(mdot,W,H,T,p,AS,Phase):
     f = 8 * ((8/Re)**12.0 + 1 / (A + B)**(1.5))**(1/12)
 
     # Heat Transfer coefficient of Gnielinski for high Re,
-    if Re>1000:
+    if Re > 1000:
         Nu = (f / 8) * (Re - 1000.) * Pr / (1 + 12.7 * sqrt(f / 8) * (Pr**(0.66666) - 1)) #[-]
     else:
         Nu = 3.66
     h = k * Nu / Dh #W/m^2-K
+
+    print('Re = ', Re, "h_vap = ", h)
     return (f, h, Re)
 
 

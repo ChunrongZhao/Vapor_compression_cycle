@@ -1052,8 +1052,8 @@ if __name__=='__main__':
     Ref         = 'R410A'
     Backend     = 'HEOS'  # choose between: 'HEOS','TTSE&HEOS','BICUBIC&HEOS','REFPROP','SRK','PR'
     AS          = CP.AbstractState(Backend, Ref)    # Abstract State
-    Cond        = SampleCondenser_Iter(AS, 43.3)
-    # Cond        = SampleCondenser(AS, 43.3)
+    # Cond        = SampleCondenser_Iter(AS, 43.3)
+    Cond        = SampleCondenser(AS, 43.3)
     print(Cond.OutputList())
 
 

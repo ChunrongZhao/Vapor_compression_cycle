@@ -106,7 +106,8 @@ class Cycle_Performance_Air:
             # ---------------------------------------------------------
             # Point 1
             # ---------------------------------------------------------
-            self.T_1                    = round(CoolProp.PropsSI('T', 'P', P_guess[0], 'Q', 1, self.refrigerant) + self.superheating, self.dec)
+            self.T_1                    = round(CoolProp.PropsSI('T', 'P', P_guess[0], 'Q', 1, self.refrigerant) + self.superheating, self.dec) # old
+            # self.T_1                    = round(CoolProp.PropsSI('T', 'P', P_guess[0], 'Q', 1, self.refrigerant), self.dec) # todo 22/07/2024
             self.h_1                    = CoolProp.PropsSI('H', 'P', P_guess[0], 'T', self.T_1, self.refrigerant)
             self.x_1                    = CoolProp.PropsSI('Q', 'P', P_guess[0], 'T', self.T_1, self.refrigerant)  # Q is the Quality
             self.s_1                    = CoolProp.PropsSI('S', 'P', P_guess[0], 'T', self.T_1, self.refrigerant)
@@ -315,7 +316,7 @@ if __name__ == '__main__':
     # ------------------------------------------------------------------------------
     Comp        = {'Comp: rpm': 3.6e3,      'Comp: eta_C_iso': 0.63,    'Comp: Disp': 4.25e-5, 'Comp: eta_C_vol': 0.95, 'Comp: eta_C_mec': 0.88}
     Evap        = {'Evap: TubeL': 10,       'Evap: TubeN': 5,           "Evap: TubeID": 0.011, 'Evap: FinEff': 0.75,    'Evap: FinRatio': 7.2, 'Evap: Pump': 220}
-    Cond        = {'Cond: TubeL': 10,       'Cond: TubeN': 5,           "Cond: TubeID": 0.011, 'Cond: FinEff': 0.75,    'Cond: FinRatio': 7.2, 'Cond: Fan': 365}
+    Cond        = {'Cond: TubeL': 10,       'Cond: TubeN': 5,           "Cond: TubeOD": 0.011, 'Cond: FinEff': 0.75,    'Cond: FinRatio': 7.2, 'Cond: Fan': 365}
     System      = {'Sys: Superheat': 8.5,   'Sys: Subcool': 6.5}
     SysParams   = dict(Comp, **Evap, **Cond, **System)   # add the dicts together
 
@@ -335,3 +336,7 @@ if __name__ == '__main__':
     print('W_comp:      {:.2f} [W]'.format(HP.W_c))
     print('T_coolant_outlet: {:.2f} [K]'.format(HP.T_coolant_outlet))
     print('Energy Balance: {:.2f} [-]'.format(HP.E_balance))
+    print('P1:          {:.2f} [kPa]'.format(HP.P_1/1e3))
+    print('T1_SAT:          {:.2f} [K]'.format(HP.T_1 - HP.superheating))
+    print('P2:          {:.2f} [kPa]'.format(HP.P_2/1e3))
+    print('T2_SAT:          {:.2f} [K]'.format(HP.T_3 + HP.subcooling))

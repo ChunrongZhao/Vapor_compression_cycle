@@ -13,7 +13,7 @@ p = AS.p()  # [Pa]
 for i in range(len(x)):
     h[i] = ShahCondensation_Average(x[i], x[i], AS, 200, 0.01, p, TsatL, TsatV)
 
-havg = np.trapz(h, x=x)
+havg = np.trapz(h, x=x)     # to integrate along the axis
 pylab.figure(figsize=(7, 5))
 pylab.axhline(havg, ls='--')
 pylab.text(0.2, havg, r'$\alpha_{avg}$', ha='center', va='bottom')
